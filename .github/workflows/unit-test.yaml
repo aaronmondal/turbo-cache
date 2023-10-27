@@ -15,16 +15,41 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-20.04, ubuntu-22.04, windows-2022]
-    name: ${{ matrix.os }}
+        build: [Bazel, Cargo]
+    name: ${{ matrix.build }} / ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: >- # v4.1.1
+      - name: Checkout repository
+        uses: >- # v4.1.1
           actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
 
-      - uses: >- # Custom commit at 2023-10-23
-          bazelbuild/setup-bazelisk@5bc144ec07bd24eaa9b5c3e8c9af4006b033b629
+      - name: Install Nix
+        if: ${{ contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos') }}
+        uses: >- # v22
+          cachix/install-nix-action@6ed004b9ccb68dbc28e7c85bee15fa93dbd214ac
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      # - name: Mount Nix cache
+      #   if: ${{ contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos') }}
+      #   uses: >- # v3.3.2
+      #     actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84
+      #   with:
+      #     # Don't use of matrix.os since Nix is reproducible across OS versions.
+      #     key: ${{ runner.os }}-nix-${{ hashFiles(
+      #         flake.nix
+      #         flake.lock
+      #       ) }}
+      #     path: ~/nix
+      #     restore-keys: |
+      #       ${{ runner.os }}-nix-
+      - name: Setup Nix Cache
+        if: ${{ contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos') }}
+        uses: >- # Custom commit, last pinned at 2023.10.28.
+          DeterminateSystems/magic-nix-cache-action@a04e6275a6bea232cd04fc6f3cbf20d4cb02a3e1
 
       - name: Determine Bazel cache mountpoint
+        if: ${{ matrix.build == 'Bazel' }}
         id: bazel-cache
         run: |
           if [ "$RUNNER_OS" == "Linux" ] || [ "$RUNNER_OS" == "macOS" ]; then
@@ -38,22 +63,47 @@ jobs:
         shell: bash
 
       - name: Mount bazel cache
+        if: ${{ matrix.build == 'Bazel' }}
         uses: >- # v3.3.2
           actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84
         with:
           path: ${{ steps.bazel-cache.outputs.mountpoint }}
-          key: ${{ matrix.os }}-bazel-unit-test
+          key: ${{ matrix.os }}-bazel-${{
+            hashFiles(
+              '.bazelversion',
+              '.bazelrc',
+              'WORKSPACE',
+              'WORKSPACE.bazel',
+              'MODULE.bazel',
+              'Cargo.Bazel.lock'
+            ) }}
+          restore-keys: |
+            ${{ matrix.os }}-bazel-
 
       - name: Run Bazel tests
+        if: ${{ matrix.build == 'Bazel' }}
         run: |
           if [ "$RUNNER_OS" == "Linux" ] || [ "$RUNNER_OS" == "macOS" ]; then
-            bazel test //...
+            nix develop -c bazel test //...
           elif [ "$RUNNER_OS" == "Windows" ]; then
-            bazel \
+            bazelisk \
               --output_user_root=${{ steps.bazel-cache.outputs.mountpoint }} \
               test \
               --config=windows \
               //...
+          else
+            echo "Unknown runner OS: $RUNNER_OS"
+            exit 1
+          fi
+        shell: bash
+
+      - name: Run Cargo tests
+        if: ${{ matrix.build == 'Cargo' }}
+        run: |
+          if [ "$RUNNER_OS" == "Linux" ] || [ "$RUNNER_OS" == "macOS" ]; then
+            nix develop -c cargo test --all
+          elif [ "$RUNNER_OS" == "Windows" ]; then
+            cargo test --all
           else
             echo "Unknown runner OS: $RUNNER_OS"
             exit 1

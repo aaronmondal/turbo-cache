@@ -17,10 +17,10 @@ PACKAGES = {
         "version": "0.2.3",
     },
     "futures": {
-        "version": "0.3.28",
+        "version": "0.3.29",
     },
     "tokio": {
-        "version": "1.29.1",
+        "version": "1.33.0",
         "features": ["macros", "io-util", "fs", "rt-multi-thread", "parking_lot"],
     },
     "tokio-stream": {
@@ -28,7 +28,7 @@ PACKAGES = {
         "features": ["fs", "sync"],
     },
     "tokio-util": {
-        "version": "0.7.8",
+        "version": "0.7.10",
         "features": ["io", "io-util", "codec"],
     },
     "tonic": {
