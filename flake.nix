@@ -35,6 +35,12 @@
 
           customStdenv = import ./tools/llvmStdenv.nix { inherit pkgs; };
 
+          # TODO(aaronmondal): This doesn't work with rules_rust yet.
+          customClang = pkgs.callPackage ./tools/customClang.nix {
+            inherit pkgs;
+            stdenv = customStdenv;
+          };
+
           craneLib = crane.lib.${system};
 
           src = pkgs.lib.cleanSourceWith {
@@ -128,6 +134,7 @@
               # Additional tools from within our development environment.
               local-image-test
               generate-toolchains
+              customClang
             ] ++ maybeDarwinDeps;
             shellHook = ''
               # Generate the .pre-commit-config.yaml symlink when entering the

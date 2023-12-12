@@ -2,27 +2,10 @@
 
 let
   customStdenv = import ../tools/llvmStdenv.nix { inherit pkgs; };
-
-  # Bazel expects a single frontend for both C and C++. That works for GCC but
-  # not for clang. This wrapper selects `clang` or `clang++` depending on file
-  # ending.
-  # TODO(aaronmondal): The necessity of this is a bug.
-  #                    See: https://github.com/NixOS/nixpkgs/issues/216047
-  #                    and https://github.com/NixOS/nixpkgs/issues/150655
-  customClang = pkgs.writeShellScriptBin "customClang" ''
-    #! ${customStdenv.shell}
-    function isCxx() {
-       if [ $# -eq 0 ]; then false
-       elif [ "$1" == '-xc++' ]; then true
-       elif [[ -f "$1" && "$1" =~ [.](hh|H|hp|hxx|hpp|HPP|h[+]{2}|tcc|cc|cp|cxx|cpp|CPP|c[+]{2}|C)$ ]]; then true
-       else isCxx "''${@:2}"; fi
-    }
-    if isCxx "$@"; then
-      exec "${customStdenv.cc}/bin/clang++" "$@"
-    else
-      exec "${customStdenv.cc}/bin/clang" "$@"
-    fi
-  '';
+  customClang = pkgs.callPackage ../tools/customClang.nix {
+    inherit pkgs;
+    stdenv = customStdenv;
+  };
 in
 
 # TODO(aaronmondal): Bazel and a few other tools in this container are only
