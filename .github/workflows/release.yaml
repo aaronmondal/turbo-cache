@@ -1,0 +1,34 @@
+---
+name: Release
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: >- # v4.1.1
+          actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+
+      - name: Install Nix
+        uses: >- #v7
+          DeterminateSystems/nix-installer-action@5620eb4af6b562c53e4d4628c0b6e4f9d9ae8612
+
+      - name: Build executable
+        run: |
+          nix build
+          cp result/bin/cas nativelink-x86_64-unknown-linux-gnu
+
+      - name: Create release
+        uses: >- # v1.13.0
+          ncipollo/release-action@6c75be85e571768fa31b40abf38de58ba0397db5
+        with:
+          allowUpdates: true
+          omitBodyDuringUpdate: true
+          artifacts: "nativelink-x86_64-unknown-linux-gnu"
