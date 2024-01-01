@@ -103,10 +103,35 @@
         local-image-test = import ./tools/local-image-test.nix {inherit pkgs;};
 
         generate-toolchains = import ./tools/generate-toolchains.nix {inherit pkgs;};
+        # patchedNixpkgs = self.inputs.nixpkgs: {
+        # };
+        # patchedNixpkgs = (import self.inputs.nixpkgs {
+        #   inherit system;
+        # }).applyPatches {
+        #   src = self.inputs.nixpkgs;
+        #   patches = [
+        #     ./tools/nixpkgs_allow_libcxxabi-17_on_x86_64-apple-darwin.diff
+        #   ];
+        # };
       in {
         _module.args.pkgs = import self.inputs.nixpkgs {
           inherit system;
-          overlays = [(import rust-overlay)];
+          overlays = [
+            (import rust-overlay)
+            # TODO(aaronmondal): This is only broken on some ancient MacOS
+            # versions. Remove this overlay once nixpkgs fixes it's version
+            # detection. See:
+            # https://github.com/NixOS/nixpkgs/blob/b0d36bd0a420ecee3bc916c91886caca87c894e9/pkgs/development/compilers/llvm/17/libcxxabi/default.nix#L113
+            (_final: prev: {
+              llvmPackages_17 =
+                prev.llvmPackages_17
+                // {
+                  libcxxabi = prev.llvmPackages_17.libcxxabi.overrideAttrs (oldAttrs: {
+                    meta = oldAttrs.meta // {broken = false;};
+                  });
+                };
+            })
+          ];
         };
         apps = {
           default = {

@@ -1,0 +1,14 @@
+diff --git a/pkgs/development/compilers/llvm/17/libcxxabi/default.nix b/pkgs/development/compilers/llvm/17/libcxxabi/default.nix
+index 0a795da44ae4..7cfc1dedda04 100644
+--- a/pkgs/development/compilers/llvm/17/libcxxabi/default.nix
++++ b/pkgs/development/compilers/llvm/17/libcxxabi/default.nix
+@@ -112,6 +112,8 @@ stdenv.mkDerivation rec {
+     maintainers = llvm_meta.maintainers ++ [ lib.maintainers.vlstill ];
+     # Broken until https://github.com/llvm/llvm-project/issues/64226 is resolved
+     # We should check if the version is not 10.13 but that is currently broken.
+-    broken = stdenv.isDarwin && stdenv.isx86_64;
++    # NOTE(aaronmondal): The versions of MacOS where this is broken are ancient
++    #                    and can't be supported by our CI.
++    # broken = stdenv.isDarwin && stdenv.isx86_64;
+   };
+ }
