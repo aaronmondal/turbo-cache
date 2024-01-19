@@ -36,12 +36,22 @@ jobs:
         run: |
           nix run .#local-image-test
 
-      - name: Upload image
+      - name: Upload nativelink image
         run: |
-          nix run .#publish-ghcr
+          nix run .#publish-ghcr $(nix eval .#image.imageTag --raw)
         env:
           GHCR_REGISTRY: ghcr.io
           GHCR_USERNAME: ${{ github.actor }}
           GHCR_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
           GHCR_IMAGE_NAME: ${{ github.repository }}
+        if: github.ref == 'refs/heads/main'
+
+      - name: Upload toolchain image
+        run: |
+          nix run .#publish-ghcr $(nix eval .#lre.imageTag --raw)
+        env:
+          GHCR_REGISTRY: ghcr.io
+          GHCR_USERNAME: ${{ github.actor }}
+          GHCR_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+          GHCR_IMAGE_NAME: ${{ github.repository }}-toolchain
         if: github.ref == 'refs/heads/main'

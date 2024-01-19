@@ -2,6 +2,15 @@
 pkgs.writeShellScriptBin "publish-ghcr" ''
   set -xeuo pipefail
 
+  if [ -z "''${1-}" ]; then
+    printf 'Error: Please provide an argument for the image tag.
+
+  Help: Prefer tags like `$(nix eval .#image.imageTag --raw)` to tag the image
+        with its correxponding nix derivation hash.
+  '>&2
+    exit 1
+  fi
+
   echo $GHCR_PASSWORD | ${pkgs.skopeo}/bin/skopeo \
     login \
     --username=$GHCR_USERNAME \
@@ -15,7 +24,7 @@ pkgs.writeShellScriptBin "publish-ghcr" ''
   # didn't change.
   #
   # If a positional argument is passed it overrides the tag value.
-  IMAGE_TAG=''${1:-$(nix eval .#image.imageTag --raw)}
+  IMAGE_TAG=$1
 
   TAGGED_IMAGE=''${GHCR_REGISTRY}/''${GHCR_IMAGE_NAME,,}:''${IMAGE_TAG}
 
