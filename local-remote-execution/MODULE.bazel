@@ -1,0 +1,15 @@
+# This is a pseudo-module to prevent Bazel from registering these Platforms and
+# toolchains on unsupported systems.
+
+module(
+    name = "local-remote-execution",
+    version = "0.0.0",
+    compatibility_level = 0,
+)
+
+bazel_dep(name = "platforms", version = "0.0.8")
+bazel_dep(name = "rules_cc", version = "0.0.9")
+bazel_dep(name = "rules_java", version = "7.3.2")
+
+# register_execution_platforms("//generated/config:platform")
+# register_toolchains( "//generated/config:cc-toolchain", "//generated/java:all")

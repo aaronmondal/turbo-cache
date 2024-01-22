@@ -44,6 +44,7 @@
         nightly-rust = pkgs.rust-bin.nightly."2024-01-01";
 
         maybeDarwinDeps = pkgs.lib.optionals pkgs.stdenv.isDarwin [
+          pkgs.darwin.CF
           pkgs.darwin.apple_sdk.frameworks.Security
           pkgs.libiconv
         ];
@@ -162,7 +163,7 @@
               # Development tooling goes here.
               stable-rust.default
               pkgs.pre-commit
-              pkgs.bazel
+              pkgs.bazel_7
               pkgs.awscli2
               pkgs.skopeo
               pkgs.dive

@@ -30,8 +30,6 @@ RUN apt update && \
         npm \
         git \
         gcc \
-        g++ \
-        python3 \
         ca-certificates && \
     npm install -g @bazel/bazelisk
 
@@ -42,7 +40,7 @@ WORKDIR /root/nativelink
 ADD . .
 ARG OPT_LEVEL
 ARG ADDITIONAL_BAZEL_FLAGS
-RUN bazel build -c ${OPT_LEVEL} ${ADDITIONAL_BAZEL_FLAGS} nativelink && \
+RUN bazel build --config=linux_zig -c ${OPT_LEVEL} ${ADDITIONAL_BAZEL_FLAGS} nativelink && \
     cp ./bazel-bin/nativelink /root/nativelink-bin
 
 # Go back to a fresh ubuntu container and copy only the compiled binary.
