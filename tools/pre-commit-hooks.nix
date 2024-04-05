@@ -50,6 +50,7 @@ in {
         "deployment-examples/chromium/example-do-not-use-in-prod-key.pem"
         "deployment-examples/docker-compose/example-do-not-use-in-prod-key.pem"
         "deployment-examples/kubernetes/example-do-not-use-in-prod-key.pem"
+        "deployment-examples/kubernetes-mstg/example-do-not-use-in-prod-key.pem"
       ];
     enable = true;
     name = "detect-private-key";

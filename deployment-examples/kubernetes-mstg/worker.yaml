@@ -1,0 +1,37 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nativelink-worker-mstg-rbe
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nativelink-worker-mstg-rbe
+  template:
+    metadata:
+      labels:
+        app: nativelink-worker-mstg-rbe
+    spec:
+      containers:
+        - name: nativelink-worker-mstg-rbe
+          image: "localhost:5001/nativelink-worker-mstg-rbe:local"
+          env:
+            - name: RUST_LOG
+              value: info
+            - name: CAS_ENDPOINT
+              value: nativelink-cas
+            - name: SCHEDULER_ENDPOINT
+              value: nativelink-scheduler
+            - name: NATIVELINK_WORKER_PLATFORM
+              value: TODO
+          volumeMounts:
+            - name: worker-mstg-rbe-config
+              mountPath: /worker.json
+              subPath: worker.json
+          command: ["/bin/nativelink"]
+          args: ["/worker.json"]
+      volumes:
+        - name: worker-mstg-rbe-config
+          configMap:
+            name: worker

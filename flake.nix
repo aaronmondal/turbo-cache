@@ -155,6 +155,17 @@
             os = "linux";
           };
         };
+        mstg-rbe = buildImage {
+          name = "mstg-rbe";
+          fromImage = pullImage {
+            imageName = "ghcr.io/mstg/bazel-rbe-ubuntu2204";
+            imageDigest = "sha256:b9745380445bd5ebfca2cd5422ff316b737a8d305aa89389caf7b56d5e8bd9bf";
+            sha256 = "sha256-+2U9JtTRSIlvikG2cvRX/Fp72v5mEyQqGxU95SHUGYw=";
+            tlsVerify = true;
+            arch = "amd64";
+            os = "linux";
+          };
+        };
       in rec {
         _module.args.pkgs = import self.inputs.nixpkgs {
           inherit system;
@@ -177,6 +188,7 @@
           rbe-autogen-lre-java = rbe-autogen lre-java;
           nativelink-worker-lre-java = createWorker lre-java;
           nativelink-worker-siso-chromium = createWorker siso-chromium;
+          nativelink-worker-mstg-rbe = createWorker mstg-rbe;
           image = buildImage {
             name = "nativelink";
             config = {
