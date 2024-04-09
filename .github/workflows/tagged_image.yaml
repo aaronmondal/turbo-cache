@@ -32,7 +32,7 @@ jobs:
 
       - name: Test image
         run: |
-          nix run .#local-image-test
+          nix run .#local-image-test image
 
       - name: Upload image
         run: |
