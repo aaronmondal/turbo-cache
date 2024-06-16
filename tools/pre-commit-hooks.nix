@@ -62,6 +62,9 @@ in {
 
       # Testdata for fastcdc.
       "nativelink-util/tests/data/SekienAkashita.jpg"
+
+      # TODO(aaronmondal): REMOVE.
+      "docs/src/assets/houston.webp"
     ];
     enable = true;
     types = ["binary"];

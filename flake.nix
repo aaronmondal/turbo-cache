@@ -266,7 +266,7 @@
               pkgs.kubectl
               pkgs.kubernetes-helm
               pkgs.cilium-cli
-              pkgs.yarn
+              pkgs.nodePackages.pnpm
               pkgs.vale
               pkgs.trivy
               pkgs.docker-client
