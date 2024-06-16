@@ -185,6 +185,7 @@
               ./tools/nixpkgs_link_libunwind_and_libcxx.diff
               ./tools/nixpkgs_disable_ratehammering_pulumi_tests.diff
               ./tools/nixpkgs_trivy_0_52_2.diff
+              ./tools/nixpkgs_playwright.diff
             ];
           };
         in
@@ -266,7 +267,6 @@
               pkgs.kubectl
               pkgs.kubernetes-helm
               pkgs.cilium-cli
-              pkgs.yarn
               pkgs.vale
               pkgs.trivy
               pkgs.docker-client
@@ -275,6 +275,7 @@
               (pkgs.pulumi.withPackages (ps: [ps.pulumi-language-go]))
               pkgs.go
               pkgs.kustomize
+              pkgs.nodePackages.pnpm
 
               # Additional tools from within our development environment.
               local-image-test
@@ -282,9 +283,15 @@
               customClang
               native-cli
               docs
+
+              # Testing...
+              pkgs.playwright-driver.browsers
             ]
             ++ maybeDarwinDeps;
           shellHook = ''
+            export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}
+            export PLAYWRIGHT_NODEJS_PATH=${pkgs.nodePackages_latest.nodejs}
+
             # Generate the .pre-commit-config.yaml symlink when entering the
             # development shell.
             ${config.pre-commit.installationScript}
