@@ -60,6 +60,8 @@
         stable-rust =
           if pkgs.stdenv.isDarwin
           then pkgs.rust-bin.stable.${stable-rust-version}
+          else if system == "aarch64-linux"
+          then pkgs.rust-bin.stable.${stable-rust-version}
           else pkgs.pkgsMusl.rust-bin.stable.${stable-rust-version};
         nightly-rust =
           if pkgs.stdenv.isDarwin
@@ -236,6 +238,11 @@
         generate-toolchains = pkgs.callPackage ./tools/generate-toolchains.nix {inherit rbe-configs-gen;};
 
         native-cli = pkgs.callPackage ./native-cli/default.nix {};
+
+        build-chromium-tests =
+          pkgs.writeShellScriptBin
+          "build-chromium-tests"
+          ./deploy/chromium-example/build_chromium_tests.sh;
 
         docs = pkgs.callPackage ./tools/docs.nix {rust = stable-rust.default;};
 
@@ -505,6 +512,7 @@
               pkgs.tektoncd-cli
               pkgs.pulumi
               pkgs.pulumiPackages.pulumi-language-go
+              pkgs.fluxcd
               pkgs.go
               pkgs.kustomize
 
@@ -521,6 +529,7 @@
               customClang
               native-cli
               docs
+              build-chromium-tests
             ]
             ++ maybeDarwinDeps
             ++ pkgs.lib.optionals (pkgs.stdenv.system != "x86_64-darwin") [
