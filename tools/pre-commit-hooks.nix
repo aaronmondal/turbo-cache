@@ -142,11 +142,11 @@ in {
   deadnix.enable = true;
 
   # Rust
-  rustfmt = {
-    enable = true;
-    packageOverrides.cargo = nightly-rust.cargo;
-    packageOverrides.rustfmt = nightly-rust.rustfmt;
-  };
+  # rustfmt = {
+  #   enable = true;
+  #   packageOverrides.cargo = nightly-rust.cargo;
+  #   packageOverrides.rustfmt = nightly-rust.rustfmt;
+  # };
 
   # Starlark
   bazel-buildifier-format = {

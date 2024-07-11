@@ -12,7 +12,6 @@
     rust-overlay = {
       url = "github:oxalica/rust-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
-      inputs.flake-utils.follows = "flake-utils";
     };
     crane = {
       url = "github:ipetkov/crane";
@@ -37,7 +36,7 @@
       systems = [
         "x86_64-linux"
         "x86_64-darwin"
-        "apps.aarch64-linux.native"
+        "aarch64-linux"
         "aarch64-darwin"
       ];
       imports = [
@@ -50,25 +49,28 @@
         system,
         ...
       }: let
-        stable-rust-version = "1.78.0";
-        nightly-rust-version = "2024-05-10";
+        stableRustVersion = "1.78.0";
+        nightlyRustVersion = "2024-05-10";
+
+        rustTargetMap = {
+          "x86_64-linux" = "x86_64-unknown-linux-musl";
+          "x86_64-darwin" = "x86_64-apple-darwin";
+          # Static musl executables are os-independent. Collapse the darwin
+          # target into the linux target via cross-compilation.
+          "aarch64-linux" = "aarch64-unknown-linux-musl";
+          "aarch64-darwin" = "aarch64-unknown-linux-musl";
+        };
 
         # TODO(aaronmondal): Make musl builds work on Darwin.
         # See: https://github.com/TraceMachina/nativelink/issues/751
-        stable-rust =
-          if pkgs.stdenv.isDarwin
-          then pkgs.rust-bin.stable.${stable-rust-version}
-          else pkgs.pkgsMusl.rust-bin.stable.${stable-rust-version};
-        nightly-rust =
-          if pkgs.stdenv.isDarwin
-          then pkgs.rust-bin.nightly.${nightly-rust-version}
-          else pkgs.pkgsMusl.rust-bin.nightly.${nightly-rust-version};
-
-        # TODO(aaronmondal): Tools like rustdoc don't work with the `pkgsMusl`
-        # package set because of missing libgcc_s. Fix this upstream and use the
-        # `stable-rust` toolchain in the devShell as well.
-        # See: https://github.com/oxalica/rust-overlay/issues/161
-        stable-rust-native = pkgs.rust-bin.stable.${stable-rust-version};
+        stableRustFor = p:
+          p.rust-bin.stable.${stableRustVersion}.default.override {
+            targets = [rustTargetMap.${system}];
+          };
+        nightlyRustFor = p:
+          p.rust-bin.nightly.${nightlyRustVersion}.default.override {
+            targets = [rustTargetMap.${system}];
+          };
 
         maybeDarwinDeps = pkgs.lib.optionals pkgs.stdenv.isDarwin [
           pkgs.darwin.apple_sdk.frameworks.Security
@@ -86,36 +88,33 @@
           stdenv = customStdenv;
         };
 
-        craneLib =
-          if pkgs.stdenv.isDarwin
-          then (crane.mkLib pkgs).overrideToolchain stable-rust.default
-          else
-            (crane.mkLib pkgs).overrideToolchain (stable-rust.default.override {
-              targets = ["x86_64-unknown-linux-musl"];
-            });
+        craneLib = let
+          targetPkgs =
+            if pkgs.stdenv.isDarwin
+            then pkgs.pkgsCross.aarch64-multiplatform-musl.pkgsMusl
+            else pkgs.pkgsMusl;
+        in
+          (crane.mkLib pkgs).overrideToolchain stableRustFor;
 
         src = pkgs.lib.cleanSourceWith {
           src = craneLib.path ./.;
           filter = path: type:
-            (builtins.match "^.*(data/SekienSkashita\.jpg|nativelink-config/README\.md)" path != null)
+            (builtins.match "^.*(data/SekienAkashita\.jpg|nativelink-config/README\.md)" path != null)
             || (craneLib.filterCargoSources path type);
         };
 
-        commonArgs =
-          {
-            inherit src;
-            stdenv =
-              if pkgs.stdenv.isDarwin
-              then customStdenv
-              else pkgs.pkgsMusl.stdenv;
-            strictDeps = true;
-            buildInputs = [pkgs.cacert] ++ maybeDarwinDeps;
-            nativeBuildInputs = maybeDarwinDeps;
-          }
-          // pkgs.lib.optionalAttrs (!pkgs.stdenv.isDarwin) {
-            CARGO_BUILD_TARGET = "x86_64-unknown-linux-musl";
-            CARGO_BUILD_RUSTFLAGS = "-C target-feature=+crt-static";
-          };
+        commonArgs = {
+          inherit src;
+          stdenv =
+            if pkgs.stdenv.isDarwin
+            then customStdenv
+            else pkgs.pkgsMusl.stdenv;
+          strictDeps = true;
+          buildInputs = [pkgs.cacert] ++ maybeDarwinDeps;
+          nativeBuildInputs = maybeDarwinDeps;
+          CARGO_BUILD_TARGET = rustTargetMap.${system};
+          CARGO_BUILD_RUSTFLAGS = "-C target-feature=+crt-static";
+        };
 
         # Additional target for external dependencies to simplify caching.
         cargoArtifacts = craneLib.buildDepsOnly commonArgs;
@@ -133,7 +132,10 @@
             cargoExtraArgs = "--features enable_tokio_console";
           });
 
-        hooks = import ./tools/pre-commit-hooks.nix {inherit pkgs nightly-rust;};
+        hooks = import ./tools/pre-commit-hooks.nix {
+          inherit pkgs;
+          nightly-rust = nightlyRustFor pkgs;
+        };
 
         publish-ghcr = import ./tools/publish-ghcr.nix {inherit pkgs;};
 
@@ -145,7 +147,7 @@
 
         native-cli = import ./native-cli/default.nix {inherit pkgs;};
 
-        docs = pkgs.callPackage ./tools/docs.nix {rust = stable-rust.default;};
+        docs = pkgs.callPackage ./tools/docs.nix {rust = stableRustFor pkgs;};
 
         inherit (nix2container.packages.${system}.nix2container) pullImage;
         inherit (nix2container.packages.${system}.nix2container) buildImage;
@@ -209,7 +211,6 @@
             patches = [
               ./tools/nixpkgs_link_libunwind_and_libcxx.diff
               ./tools/nixpkgs_disable_ratehammering_pulumi_tests.diff
-              ./tools/nixpkgs_trivy_0_52_2.diff
               ./tools/nixpkgs_playwright.diff
             ];
           };
@@ -269,7 +270,7 @@
             [
               # Development tooling goes here.
               bazel
-              stable-rust-native.default
+              (stableRustFor pkgs)
               pkgs.pre-commit
               pkgs.awscli2
               pkgs.skopeo
