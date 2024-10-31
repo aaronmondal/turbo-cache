@@ -10,62 +10,28 @@ spec:
   ref:
     branch: main
 ---
-apiVersion: notification.toolkit.fluxcd.io/v1beta3
-kind: Provider
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
 metadata:
-  name: nativelink-webhook
-  namespace: flux-system
+  name: nativelink-alerts
+  namespace: default
 spec:
-  type: generic
-  address: http://el-nativelink-rebuild.default.svc.cluster.local:8080
----
-apiVersion: notification.toolkit.fluxcd.io/v1beta3
-kind: Alert
-metadata:
-  name: nativelink-image-alert
-  namespace: flux-system
-spec:
-  eventSeverity: info
-  eventSources:
-    - kind: GitRepository
-      name: '*'
+  interval: 2m
+  path: "./kubernetes/components/alerts"
+  prune: true
+  force: true
+  retryInterval: 20s
+  targetNamespace: flux-system
+  wait: true
+  sourceRef:
+    kind: GitRepository
+    name: nativelink
+    namespace: default
+  healthChecks:
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: el-nativelink-rebuild
       namespace: default
-  providerRef:
-    name: nativelink-webhook
-  eventMetadata:
-    flakeOutput: github:TraceMachina/nativelink#image
----
-apiVersion: notification.toolkit.fluxcd.io/v1beta3
-kind: Alert
-metadata:
-  name: nativelink-worker-init-alert
-  namespace: flux-system
-spec:
-  eventSeverity: info
-  eventSources:
-    - kind: GitRepository
-      name: '*'
-      namespace: default
-  providerRef:
-    name: nativelink-webhook
-  eventMetadata:
-    flakeOutput: github:TraceMachina/nativelink#nativelink-worker-init
----
-apiVersion: notification.toolkit.fluxcd.io/v1beta3
-kind: Alert
-metadata:
-  name: nativelink-worker-alert
-  namespace: flux-system
-spec:
-  eventSeverity: info
-  eventSources:
-    - kind: GitRepository
-      name: '*'
-      namespace: default
-  providerRef:
-    name: nativelink-webhook
-  eventMetadata:
-    flakeOutput: "PLACEHOLDER_NATIVELINK_WORKER"
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
@@ -127,3 +93,62 @@ spec:
     kind: GitRepository
     name: nativelink
     namespace: default
+  dependsOn:
+    - name: tekton-operator
+    - name: nativelink-alerts
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: tekton-operator-crds
+  namespace: default
+spec:
+  interval: 2m
+  path: "./kubernetes/tekton-operator"
+  prune: true
+  force: true
+  retryInterval: 20s
+  targetNamespace: default
+  wait: true
+  sourceRef:
+    kind: GitRepository
+    name: nativelink
+    namespace: default
+  patches:
+    - target:
+        kind: (Service|ServiceAccount|ConfigMap|Secret|Deployment|Role|RoleBinding|ClusterRole|ClusterRoleBinding|Namespace)
+      patch: |
+        apiVersion: v1
+        kind: Service
+        metadata:
+          name: dummy
+        $patch: delete
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: tekton-operator
+  namespace: default
+spec:
+  interval: 2m
+  path: "./kubernetes/tekton-operator"
+  prune: true
+  force: true
+  retryInterval: 20s
+  targetNamespace: tekton-operator
+  wait: true
+  sourceRef:
+    kind: GitRepository
+    name: nativelink
+    namespace: default
+  dependsOn:
+    - name: tekton-operator-crds
+  patches:
+    - target:
+        kind: CustomResourceDefinition
+      patch: |
+        apiVersion: apiextensions.k8s.io/v1
+        kind: CustomResourceDefinition
+        metadata:
+          name: dummy
+        $patch: delete

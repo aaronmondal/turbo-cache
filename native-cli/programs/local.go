@@ -25,7 +25,7 @@ func ProgramForLocalCluster(ctx *pulumi.Context) error {
 	cilium, err := components.AddComponent(
 		ctx,
 		"cilium",
-		&components.Cilium{Version: "1.16.0-pre.2"},
+		&components.Cilium{Version: "1.16.3"},
 	)
 	if err != nil {
 		log.Println(err)
@@ -53,7 +53,7 @@ func ProgramForLocalCluster(ctx *pulumi.Context) error {
 	flux, err := components.AddComponent(
 		ctx,
 		"flux",
-		&components.Flux{Version: "2.3.0"},
+		&components.Flux{Version: "2.4.0"},
 	)
 	if err != nil {
 		log.Println(err)
@@ -70,47 +70,9 @@ func ProgramForLocalCluster(ctx *pulumi.Context) error {
 		},
 	))
 
-	tektonPipelines, err := components.AddComponent(
-		ctx,
-		"tekton-pipelines",
-		&components.TektonPipelines{
-			Version: "0.58.0",
-		},
-	)
-	if err != nil {
-		log.Println(err)
-		os.Exit(1)
-	}
-
-	tektonTriggers, err := components.AddComponent(
-		ctx,
-		"tekton-triggers",
-		&components.TektonTriggers{
-			Version: "0.26.1",
-			Dependencies: slices.Concat(
-				tektonPipelines,
-			),
-		},
-	)
-	if err != nil {
-		log.Println(err)
-		os.Exit(1)
-	}
-
-	components.Check(components.AddComponent(
-		ctx,
-		"tekton-dashboard",
-		&components.TektonDashboard{
-			Version: "0.45.0",
-			Dependencies: slices.Concat(
-				tektonPipelines, tektonTriggers,
-			),
-		},
-	))
-
 	nativeLinkGateways, err := components.AddComponent(
 		ctx,
-		"nativelink-gatways",
+		"nativelink-gateways",
 		&components.NativeLinkGateways{
 			Dependencies: cilium,
 		},

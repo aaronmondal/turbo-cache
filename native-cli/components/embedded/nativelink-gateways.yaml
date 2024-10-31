@@ -50,13 +50,22 @@ apiVersion: gateway.networking.k8s.io/v1beta1
 kind: Gateway
 metadata:
   name: tkn-gateway
-  namespace: tekton-pipelines
+  namespace: default
 spec:
   gatewayClassName: cilium
   listeners:
     - name: tkn-gateway
       protocol: HTTP
       port: 80
+      allowedRoutes:
+        namespaces:
+          from: Selector
+          selector:
+            matchExpressions:
+              - key: kubernetes.io/metadata.name
+                operator: In
+                values:
+                  - tekton-pipelines
 ---
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: Gateway

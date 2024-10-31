@@ -330,7 +330,7 @@ func (component *Loadbalancer) Install(
 	loadbalancer, err := createDockerContainer(
 		ctx,
 		name,
-		"envoyproxy/envoy:v1.19.1",
+		"envoyproxy/envoy:v1.32.1",
 		absolutePath,
 		dockerContainerPorts(component.Gateways),
 		component.Dependencies,
