@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::serde_utils::{
@@ -25,7 +26,7 @@ use crate::serde_utils::{
 pub type StoreRefName = String;
 
 #[allow(non_camel_case_types)]
-#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, JsonSchema)]
 pub enum ConfigDigestHashFunction {
     /// Use the sha256 hash function.
     /// <https://en.wikipedia.org/wiki/SHA-2>
@@ -36,35 +37,7 @@ pub enum ConfigDigestHashFunction {
     blake3,
 }
 
-// #[derive(Debug, Clone, Serialize, Deserialize)]
-// #[serde(rename_all = "camelCase")]
-// pub enum StoreKind {
-//     Memory,
-//     Filesystem,
-//     S3,
-//     Verify,
-//     CompletenessChecking,
-//     Compression,
-//     Dedup,
-//     ExistenceCache,
-//     FastSlow,
-//     Shard,
-//     Ref,
-//     SizePartitioning,
-//     Grpc,
-//     Redis,
-//     Noop,
-// }
-
-// #[derive(Debug, Clone, Serialize, Deserialize)]
-// #[serde(rename_all = "camelCase")]
-// pub struct StoreConfig {
-//     pub name: String,
-//     pub kind: StoreKind,
-//     pub spec: StoreSpec,
-// }
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum StoreConfig {
     /// Memory store will store all data in a hashmap in memory.
@@ -470,8 +443,7 @@ pub enum StoreConfig {
 }
 
 /// Configuration for an individual shard of the store.
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(deny_unknown_fields)]
+#[derive(Serialize, Deserialize, Debug, Clone, JsonSchema)]
 pub struct ShardConfig {
     //  Note: Instead of having a separate 'store' field, we flatten the
     //  StoreConfig fields directly into this struct
@@ -486,14 +458,15 @@ pub struct ShardConfig {
     pub weight: Option<u32>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ShardSpec {
     /// Stores to shard the data to.
+    #[schemars(with = "NestedStoreSchema")]
     pub stores: Vec<ShardConfig>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct SizePartitioningSpec {
     /// Size to partition the data on.
@@ -507,7 +480,7 @@ pub struct SizePartitioningSpec {
     pub upper_store: Box<StoreConfig>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct RefSpec {
     /// Name of the store under the root "stores" config object.
@@ -515,7 +488,7 @@ pub struct RefSpec {
     pub name: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct FilesystemSpec {
     /// Path on the system where to store the actual content. This is where
@@ -553,7 +526,7 @@ pub struct FilesystemSpec {
     pub block_size: u64,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct FastSlowSpec {
     /// Fast store that will be attempted to be contacted before reaching
@@ -565,7 +538,7 @@ pub struct FastSlowSpec {
     pub slow: Box<StoreConfig>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct MemorySpec {
     /// Policy used to evict items out of the store. Failure to set this
@@ -574,7 +547,7 @@ pub struct MemorySpec {
     pub eviction_policy: Option<EvictionPolicy>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct DedupSpec {
     /// Store used to store the index of each dedup slice. This store
@@ -629,7 +602,7 @@ pub struct DedupSpec {
     pub max_concurrent_fetch_per_get: u32,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ExistenceCacheSpec {
     /// The underlying store wrap around. All content will first flow
@@ -645,7 +618,22 @@ pub struct ExistenceCacheSpec {
     pub eviction_policy: Option<EvictionPolicy>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[allow(dead_code)]
+#[derive(JsonSchema)]
+#[schemars(rename = "NestedStoreConfig")]
+struct NestedStoreSchema {
+    /// Type of store
+    #[serde(rename = "type")]
+    store_type: String,
+
+    // Only include absolutely required common fields
+    // We don't need the full schema for nested references
+    #[serde(flatten)]
+    properties: std::collections::HashMap<String, i32>, // TODO(aaronmondal): FIgure out why value
+                                                        // doesn't work later.
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct VerifySpec {
     /// The underlying store wrap around. All content will first flow
@@ -671,7 +659,7 @@ pub struct VerifySpec {
     pub verify_hash: bool,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct CompletenessCheckingSpec {
     /// The underlying store that will have it's results validated before sending to client.
@@ -682,8 +670,7 @@ pub struct CompletenessCheckingSpec {
     pub cas_store: Box<StoreConfig>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Default, PartialEq, Clone, Copy)]
-#[serde(deny_unknown_fields)]
+#[derive(Serialize, Deserialize, Debug, Default, PartialEq, Clone, Copy, JsonSchema)]
 pub struct Lz4Config {
     /// Size of the blocks to compress.
     /// Higher values require more ram, but might yield slightly better
@@ -706,7 +693,7 @@ pub struct Lz4Config {
 }
 
 #[allow(non_camel_case_types)]
-#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone, JsonSchema)]
 pub enum CompressionAlgorithm {
     /// LZ4 compression algorithm is extremely fast for compression and
     /// decompression, however does not perform very well in compression
@@ -718,7 +705,7 @@ pub enum CompressionAlgorithm {
     lz4(Lz4Config),
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct CompressionSpec {
     /// The underlying store wrap around. All content will first flow
@@ -736,8 +723,7 @@ pub struct CompressionSpec {
 /// is touched it updates the timestamp. Inserts and updates will execute the
 /// eviction policy removing any expired entries and/or the oldest entries
 /// until the store size becomes smaller than max_bytes.
-#[derive(Serialize, Deserialize, Debug, Default, Clone)]
-#[serde(deny_unknown_fields)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone, JsonSchema)]
 pub struct EvictionPolicy {
     /// Maximum number of bytes before eviction takes place.
     /// Default: 0. Zero means never evict based on size.
@@ -763,7 +749,7 @@ pub struct EvictionPolicy {
     pub max_count: u64,
 }
 
-#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct S3Spec {
     /// S3 region. Usually us-east-1, us-west-2, af-south-1, exc...
@@ -827,7 +813,7 @@ pub struct S3Spec {
 }
 
 #[allow(non_camel_case_types)]
-#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, JsonSchema)]
 pub enum StoreType {
     /// The store is content addressable storage.
     cas,
@@ -835,7 +821,7 @@ pub enum StoreType {
     ac,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, JsonSchema)]
 pub struct ClientTlsConfig {
     /// Path to the certificate authority to use to validate the remote.
     #[serde(deserialize_with = "convert_string_with_shellexpand")]
@@ -850,8 +836,7 @@ pub struct ClientTlsConfig {
     pub key_file: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(deny_unknown_fields)]
+#[derive(Serialize, Deserialize, Debug, Clone, JsonSchema)]
 pub struct GrpcEndpoint {
     /// The endpoint address (i.e. grpc(s)://example.com:443).
     #[serde(deserialize_with = "convert_string_with_shellexpand")]
@@ -862,7 +847,7 @@ pub struct GrpcEndpoint {
     pub concurrency_limit: Option<usize>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct GrpcSpec {
     /// Instance name for GRPC calls. Proxy calls will have the instance_name changed to this.
@@ -892,7 +877,7 @@ pub struct GrpcSpec {
 }
 
 /// The possible error codes that might occur on an upstream request.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub enum ErrorCode {
     Cancelled = 1,
     Unknown = 2,
@@ -913,7 +898,7 @@ pub enum ErrorCode {
     // Note: This list is duplicated from nativelink-error/lib.rs.
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, JsonSchema)]
 pub struct RedisSpec {
     /// The hostname or IP address of the Redis server.
     /// Ex: ["redis://username:password@redis-server-url:6380/99"]
@@ -1030,7 +1015,7 @@ pub struct RedisSpec {
     pub retry: Retry,
 }
 
-#[derive(Debug, Default, Deserialize, Serialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Deserialize, Serialize, Clone, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum RedisMode {
     Cluster,
@@ -1063,8 +1048,7 @@ pub struct NoopSpec {}
 /// 8         4.8s - 8s
 /// Remember that to get total results is additive, meaning the above results
 /// would mean a single request would have a total delay of 9.525s - 15.875s.
-#[derive(Serialize, Deserialize, Clone, Debug, Default)]
-#[serde(deny_unknown_fields)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default, JsonSchema)]
 pub struct Retry {
     /// Maximum number of retries until retrying stops.
     /// Setting this to zero will always attempt 1 time, but not retry.

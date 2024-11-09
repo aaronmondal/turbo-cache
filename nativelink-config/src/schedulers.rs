@@ -14,29 +14,13 @@
 
 use std::collections::HashMap;
 
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::serde_utils::{convert_duration_with_shellexpand, convert_numeric_with_shellexpand};
 use crate::stores::{GrpcEndpoint, Retry, StoreRefName};
 
-// #[derive(Debug, Clone, Serialize, Deserialize)]
-// #[serde(rename_all = "camelCase")]
-// pub enum SchedulerKind {
-//     Simple,
-//     Grpc,
-//     CacheLookup,
-//     PropertyModifier,
-// }
-//
-// #[derive(Debug, Serialize, Deserialize)]
-// #[serde(rename_all = "camelCase")]
-// pub struct SchedulerConfig {
-//     pub name: String,
-//     pub kind: SchedulerKind,
-//     pub spec: SchedulerSpec,
-// }
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum SchedulerConfig {
     Simple {
@@ -60,7 +44,7 @@ pub enum SchedulerConfig {
 /// When the scheduler matches tasks to workers that are capable of running
 /// the task, this value will be used to determine how the property is treated.
 #[allow(non_camel_case_types)]
-#[derive(Deserialize, Debug, Clone, Copy, Hash, Eq, PartialEq, Serialize)]
+#[derive(Deserialize, Debug, Clone, Copy, Hash, Eq, PartialEq, Serialize, JsonSchema)]
 pub enum PropertyType {
     /// Requires the platform property to be a u64 and when the scheduler looks
     /// for appropriate worker nodes that are capable of executing the task,
@@ -85,7 +69,7 @@ pub enum PropertyType {
 /// on how to choose which worker should run the job when multiple
 /// workers are able to run the task.
 #[allow(non_camel_case_types)]
-#[derive(Copy, Clone, Deserialize, Debug, Default, Serialize)]
+#[derive(Copy, Clone, Deserialize, Debug, Default, Serialize, JsonSchema)]
 pub enum WorkerAllocationStrategy {
     /// Prefer workers that have been least recently used to run a job.
     #[default]
@@ -94,7 +78,7 @@ pub enum WorkerAllocationStrategy {
     most_recently_used,
 }
 
-#[derive(Clone, Deserialize, Debug, Default, Serialize)]
+#[derive(Clone, Deserialize, Debug, Default, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct SimpleSpec {
     /// A list of supported platform properties mapped to how these properties
@@ -161,15 +145,16 @@ pub struct SimpleSpec {
 }
 
 #[allow(non_camel_case_types)]
-#[derive(Clone, Deserialize, Debug, Serialize)]
+#[derive(Clone, Deserialize, Debug, Serialize, JsonSchema)]
 pub enum ExperimentalSimpleSchedulerBackend {
     /// Use an in-memory store for the scheduler.
     memory,
+
     /// Use a redis store for the scheduler.
     redis(ExperimentalRedisSchedulerBackend),
 }
 
-#[derive(Clone, Deserialize, Debug, Default, Serialize)]
+#[derive(Clone, Deserialize, Debug, Default, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ExperimentalRedisSchedulerBackend {
     /// A reference to the redis store to use for the scheduler.
@@ -181,7 +166,7 @@ pub struct ExperimentalRedisSchedulerBackend {
 /// is useful to use when doing some kind of local action cache or CAS away from
 /// the main cluster of workers.  In general, it's more efficient to point the
 /// build at the main scheduler directly though.
-#[derive(Clone, Deserialize, Debug, Serialize)]
+#[derive(Clone, Deserialize, Debug, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct GrpcSpec {
     /// The upstream scheduler to forward requests to.
@@ -203,7 +188,7 @@ pub struct GrpcSpec {
     pub connections_per_endpoint: usize,
 }
 
-#[derive(Clone, Deserialize, Debug, Serialize)]
+#[derive(Clone, Deserialize, Debug, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct CacheLookupSpec {
     /// The reference to the action cache store used to return cached
@@ -215,7 +200,7 @@ pub struct CacheLookupSpec {
     pub scheduler: Box<SchedulerConfig>,
 }
 
-#[derive(Deserialize, Debug, Clone, Serialize)]
+#[derive(Deserialize, Debug, Clone, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct PlatformPropertyAddition {
     /// The name of the property to add.
@@ -225,7 +210,7 @@ pub struct PlatformPropertyAddition {
 }
 
 #[allow(non_camel_case_types)]
-#[derive(Deserialize, Debug, Clone, Serialize)]
+#[derive(Deserialize, Debug, Clone, Serialize, JsonSchema)]
 pub enum PropertyModification {
     /// Add a property to the action properties.
     add(PlatformPropertyAddition),
@@ -233,7 +218,7 @@ pub enum PropertyModification {
     remove(String),
 }
 
-#[derive(Clone, Deserialize, Debug, Serialize)]
+#[derive(Clone, Deserialize, Debug, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct PropertyModifierSpec {
     /// A list of modifications to perform to incoming actions for the nested
