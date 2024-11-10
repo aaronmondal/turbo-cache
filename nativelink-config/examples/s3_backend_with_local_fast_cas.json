@@ -1,23 +1,32 @@
 {
-  "stores": {
-    "CAS_MAIN_STORE": {
-      "verify": {
+  "stores": [
+    {
+      "name": "CAS_MAIN_STORE",
+      "kind": "verify",
+      "spec": {
         "backend": {
-          "dedup": {
+          "name": "cas-dedup",
+          "kind": "dedup",
+          "spec": {
             "index_store": {
-              "fast_slow": {
+              "name": "cas-index",
+              "kind": "fastSlow",
+              "spec": {
                 "fast": {
-                  "filesystem": {
+                  "name": "cas-index-fast",
+                  "kind": "filesystem",
+                  "spec": {
                     "content_path": "/tmp/nativelink/data/content_path-index",
                     "temp_path": "/tmp/nativelink/data/tmp_path-index",
                     "eviction_policy": {
-                      // 500mb.
-                      "max_bytes": 500000000,
+                      "max_bytes": "500Mb",
                     }
                   }
                 },
                 "slow": {
-                  "experimental_s3_store": {
+                  "name": "cas-index-slow",
+                  "kind": "experimentalS3",
+                  "spec": {
                     "region": "eu-north-1",
                     "bucket": "crossplane-bucket-af79aeca9",
                     "key_prefix": "test-prefix-index/",
@@ -32,24 +41,31 @@
               }
             },
             "content_store": {
-              "compression": {
+              "name": "cas-content",
+              "kind": "compression",
+              "spec": {
                 "compression_algorithm": {
                   "lz4": {}
                 },
                 "backend": {
-                  "fast_slow": {
+                  "name": "cas-content-backend",
+                  "kind": "fastSlow",
+                  "spec": {
                     "fast": {
-                      "filesystem": {
+                      "name": "cas-content-backend-fast",
+                      "kind": "filesystem",
+                      "spec": {
                         "content_path": "/tmp/nativelink/data/content_path-content",
                         "temp_path": "/tmp/nativelink/data/tmp_path-content",
                         "eviction_policy": {
-                          // 2gb.
-                          "max_bytes": 2000000000,
+                          "max_bytes": "2Gb",
                         }
                       }
                     },
                     "slow": {
-                      "experimental_s3_store": {
+                      "name": "cas-content-backend-slow",
+                      "kind": "experimentalS3",
+                      "spec": {
                         "region": "eu-north-1",
                         "bucket": "crossplane-bucket-af79aeca9",
                         "key_prefix": "test-prefix-dedup-cas/",
@@ -70,16 +86,18 @@
         "verify_size": true,
         "hash_verification_function": "sha256"
       }
-    },
-    "AC_MAIN_STORE": {
-      "fast_slow": {
+    }, {
+      "name": "AC_MAIN_STORE",
+      "kind": "fastSlow",
+      "spec": {
         "fast": {
-          "memory": {
+          "name": "ac-fast",
+          "kind": "memory",
+          "spec": {
             "eviction_policy": {
-              // 100mb.
-              "max_bytes": 100000000,
+              "max_bytes": "100Mb",
             }
-          },
+          }, // TODO(aaronmondal): Broken??
           "filesystem": {
             "content_path": "/tmp/nativelink/data/content_path-ac",
             "temp_path": "/tmp/nativelink/data/tmp_path-ac",
@@ -90,7 +108,9 @@
           }
         },
         "slow": {
-          "experimental_s3_store": {
+          "name": "ac-slow",
+          "kind": "experimentalS3",
+          "spec": {
             "region": "eu-north-1",
             "bucket": "crossplane-bucket-af79aeca9",
             "key_prefix": "test-prefix-ac/",
@@ -104,10 +124,12 @@
         }
       }
     }
-  },
-  "schedulers": {
-    "MAIN_SCHEDULER": {
-      "simple": {
+  ],
+  "schedulers": [
+    {
+      "name": "MAIN_SCHEDULER",
+      "kind": "simple",
+      "spec": {
         "supported_platform_properties": {
           "cpu_count": "minimum",
           "memory_kb": "minimum",
@@ -127,7 +149,7 @@
         }
       }
     }
-  },
+  ],
   "servers": [{
     "listener": {
       "http": {

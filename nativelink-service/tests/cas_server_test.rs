@@ -49,9 +49,10 @@ async fn make_store_manager() -> Result<Arc<StoreManager>, Error> {
     store_manager.add_store(
         "main_cas",
         store_factory(
-            &nativelink_config::stores::StoreConfig::memory(
-                nativelink_config::stores::MemoryStore::default(),
-            ),
+            &nativelink_config::stores::StoreConfig::Memory {
+                name: "main".to_string(),
+                spec: nativelink_config::stores::MemorySpec::default(),
+            },
             &store_manager,
             None,
         )

@@ -1,40 +1,53 @@
 {
-  "stores": {
-    "CAS_FAST_SLOW_STORE": {
-      "redis_store": {
+  "stores": [
+    {
+      "name": "CAS_FAST_SLOW_STORE",
+      "kind": "redis",
+      "spec": {
         "addresses": ["redis://127.0.0.1:6379/"],
         "mode": "cluster"
       }
-    },
-    "AC_FAST_SLOW_STORE": {
-      "redis_store": {
+    }, {
+      "name": "AC_FAST_SLOW_STORE",
+      "kind": "redis",
+      "spec": {
         "addresses": ["redis://127.0.0.1:6379/"],
         "mode": "cluster"
       }
-    },
-    "AC_MAIN_STORE": {
-      "completeness_checking": {
+    }, {
+      "name": "AC_MAIN_STORE",
+      "kind": "completenessChecking",
+      "spec": {
         "backend": {
-          "ref_store": {
+          "name": "ac-ref",
+          "kind": "ref",
+          "spec": {
             "name": "AC_FAST_SLOW_STORE"
           }
         },
         "cas_store": {
-          "ref_store": {
+          "name": "cas-ref",
+          "kind": "ref",
+          "spec": {
             "name": "CAS_MAIN_STORE"
           }
         }
       }
-    },
-    "CAS_MAIN_STORE": {
-      "existence_cache": {
+    }, {
+      "name": "CAS_MAIN_STORE",
+      "kind": "existenceCache",
+      "spec": {
         "backend": {
-          "compression": {
+          "name": "cas-compression",
+          "kind": "compression",
+          "spec": {
             "compression_algorithm": {
               "lz4": {}
             },
             "backend": {
-              "ref_store": {
+              "name": "cas-compression-ref",
+              "kind": "ref",
+              "spec": {
                 "name": "CAS_FAST_SLOW_STORE"
               }
             }
@@ -42,7 +55,7 @@
         }
       }
     }
-  },
+  ],
   "servers": [
     {
       "listener": {

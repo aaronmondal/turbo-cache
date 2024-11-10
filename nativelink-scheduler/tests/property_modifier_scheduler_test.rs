@@ -42,11 +42,12 @@ struct TestContext {
 
 fn make_modifier_scheduler(modifications: Vec<PropertyModification>) -> TestContext {
     let mock_scheduler = Arc::new(MockActionScheduler::new());
-    let config = nativelink_config::schedulers::PropertyModifierScheduler {
+    let config = nativelink_config::schedulers::PropertyModifierSpec {
         modifications,
-        scheduler: Box::new(nativelink_config::schedulers::SchedulerConfig::simple(
-            nativelink_config::schedulers::SimpleScheduler::default(),
-        )),
+        scheduler: Box::new(nativelink_config::schedulers::SchedulerConfig::Simple {
+            name: "simple".to_string(),
+            spec: nativelink_config::schedulers::SimpleSpec::default(),
+        }),
     };
     let modifier_scheduler = PropertyModifierScheduler::new(&config, mock_scheduler.clone());
     TestContext {

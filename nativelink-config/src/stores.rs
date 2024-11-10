@@ -36,8 +36,36 @@ pub enum ConfigDigestHashFunction {
     blake3,
 }
 
-#[allow(non_camel_case_types)]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+// #[derive(Debug, Clone, Serialize, Deserialize)]
+// #[serde(rename_all = "camelCase")]
+// pub enum StoreKind {
+//     Memory,
+//     Filesystem,
+//     S3,
+//     Verify,
+//     CompletenessChecking,
+//     Compression,
+//     Dedup,
+//     ExistenceCache,
+//     FastSlow,
+//     Shard,
+//     Ref,
+//     SizePartitioning,
+//     Grpc,
+//     Redis,
+//     Noop,
+// }
+
+// #[derive(Debug, Clone, Serialize, Deserialize)]
+// #[serde(rename_all = "camelCase")]
+// pub struct StoreConfig {
+//     pub name: String,
+//     pub kind: StoreKind,
+//     pub spec: StoreSpec,
+// }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "camelCase")]
 pub enum StoreConfig {
     /// Memory store will store all data in a hashmap in memory.
     ///
@@ -52,7 +80,7 @@ pub enum StoreConfig {
     /// }
     /// ```
     ///
-    memory(MemoryStore),
+    Memory { name: String, spec: MemorySpec },
 
     /// S3 store will use Amazon's S3 service as a backend to store
     /// the files. This configuration can be used to share files
@@ -76,7 +104,7 @@ pub enum StoreConfig {
     /// }
     /// ```
     ///
-    experimental_s3_store(S3Store),
+    S3 { name: String, spec: S3Spec },
 
     /// Verify store is used to apply verifications to an underlying
     /// store implementation. It is strongly encouraged to validate
@@ -100,7 +128,7 @@ pub enum StoreConfig {
     /// }
     /// ```
     ///
-    verify(Box<VerifyStore>),
+    Verify { name: String, spec: VerifySpec },
 
     /// Completeness checking store verifies if the
     /// output files & folders exist in the CAS before forwarding
@@ -128,7 +156,10 @@ pub enum StoreConfig {
     ///   }
     /// ```
     ///
-    completeness_checking(Box<CompletenessCheckingStore>),
+    CompletenessChecking {
+        name: String,
+        spec: CompletenessCheckingSpec,
+    },
 
     /// A compression store that will compress the data inbound and
     /// outbound. There will be a non-trivial cost to compress and
@@ -156,7 +187,7 @@ pub enum StoreConfig {
     ///   }
     /// ```
     ///
-    compression(Box<CompressionStore>),
+    Compression { name: String, spec: CompressionSpec },
 
     /// A dedup store will take the inputs and run a rolling hash
     /// algorithm on them to slice the input into smaller parts then
@@ -221,7 +252,7 @@ pub enum StoreConfig {
     ///   }
     /// ```
     ///
-    dedup(Box<DedupStore>),
+    Dedup { name: String, spec: DedupSpec },
 
     /// Existence store will wrap around another store and cache calls
     /// to has so that subsequent has_with_results calls will be
@@ -248,7 +279,10 @@ pub enum StoreConfig {
     ///   }
     /// ```
     ///
-    existence_cache(Box<ExistenceCacheStore>),
+    ExistenceCache {
+        name: String,
+        spec: ExistenceCacheSpec,
+    },
 
     /// FastSlow store will first try to fetch the data from the `fast`
     /// store and then if it does not exist try the `slow` store.
@@ -291,7 +325,7 @@ pub enum StoreConfig {
     ///   }
     /// ```
     ///
-    fast_slow(Box<FastSlowStore>),
+    FastSlow { name: String, spec: FastSlowSpec },
 
     /// Shards the data to multiple stores. This is useful for cases
     /// when you want to distribute the load across multiple stores.
@@ -313,7 +347,7 @@ pub enum StoreConfig {
     /// }
     /// ```
     ///
-    shard(ShardStore),
+    Shard { name: String, spec: ShardSpec },
 
     /// Stores the data on the filesystem. This store is designed for
     /// local persistent storage. Restarts of this program should restore
@@ -334,7 +368,7 @@ pub enum StoreConfig {
     /// }
     /// ```
     ///
-    filesystem(FilesystemStore),
+    Filesystem { name: String, spec: FilesystemSpec },
 
     /// Store used to reference a store in the root store manager.
     /// This is useful for cases when you want to share a store in different
@@ -349,7 +383,7 @@ pub enum StoreConfig {
     /// }
     /// ```
     ///
-    ref_store(RefStore),
+    Ref { name: String, spec: RefSpec },
 
     /// Uses the size field of the digest to separate which store to send the
     /// data. This is useful for cases when you'd like to put small objects
@@ -377,7 +411,10 @@ pub enum StoreConfig {
     ///   }
     /// ```
     ///
-    size_partitioning(Box<SizePartitioningStore>),
+    SizePartitioning {
+        name: String,
+        spec: SizePartitioningSpec,
+    },
 
     /// This store will pass-through calls to another GRPC store. This store
     /// is not designed to be used as a sub-store of another store, but it
@@ -400,7 +437,7 @@ pub enum StoreConfig {
     ///   }
     /// ```
     ///
-    grpc(GrpcStore),
+    Grpc { name: String, spec: GrpcSpec },
 
     /// Stores data in any stores compatible with Redis APIs.
     ///
@@ -417,7 +454,7 @@ pub enum StoreConfig {
     /// }
     /// ```
     ///
-    redis_store(RedisStore),
+    Redis { name: String, spec: RedisSpec },
 
     /// Noop store is a store that sends streams into the void and all data
     /// retrieval will return 404 (NotFound). This can be useful for cases
@@ -429,13 +466,15 @@ pub enum StoreConfig {
     /// "noop": {}
     /// ```
     ///
-    noop,
+    Noop { name: String, spec: NoopSpec },
 }
 
 /// Configuration for an individual shard of the store.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct ShardConfig {
+    //  Note: Instead of having a separate 'store' field, we flatten the
+    //  StoreConfig fields directly into this struct
     /// Store to shard the data to.
     pub store: StoreConfig,
 
@@ -449,28 +488,28 @@ pub struct ShardConfig {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(deny_unknown_fields)]
-pub struct ShardStore {
+pub struct ShardSpec {
     /// Stores to shard the data to.
     pub stores: Vec<ShardConfig>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(deny_unknown_fields)]
-pub struct SizePartitioningStore {
+pub struct SizePartitioningSpec {
     /// Size to partition the data on.
     #[serde(deserialize_with = "convert_data_size_with_shellexpand")]
     pub size: u64,
 
     /// Store to send data when object is < (less than) size.
-    pub lower_store: StoreConfig,
+    pub lower_store: Box<StoreConfig>,
 
     /// Store to send data when object is >= (less than eq) size.
-    pub upper_store: StoreConfig,
+    pub upper_store: Box<StoreConfig>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 #[serde(deny_unknown_fields)]
-pub struct RefStore {
+pub struct RefSpec {
     /// Name of the store under the root "stores" config object.
     #[serde(deserialize_with = "convert_string_with_shellexpand")]
     pub name: String,
@@ -478,7 +517,7 @@ pub struct RefStore {
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 #[serde(deny_unknown_fields)]
-pub struct FilesystemStore {
+pub struct FilesystemSpec {
     /// Path on the system where to store the actual content. This is where
     /// the bulk of the data will be placed.
     /// On service bootup this folder will be scanned and all files will be
@@ -516,19 +555,19 @@ pub struct FilesystemStore {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(deny_unknown_fields)]
-pub struct FastSlowStore {
+pub struct FastSlowSpec {
     /// Fast store that will be attempted to be contacted before reaching
     /// out to the `slow` store.
-    pub fast: StoreConfig,
+    pub fast: Box<StoreConfig>,
 
     /// If the object does not exist in the `fast` store it will try to
     /// get it from this store.
-    pub slow: StoreConfig,
+    pub slow: Box<StoreConfig>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 #[serde(deny_unknown_fields)]
-pub struct MemoryStore {
+pub struct MemorySpec {
     /// Policy used to evict items out of the store. Failure to set this
     /// value will cause items to never be removed from the store causing
     /// infinite memory usage.
@@ -537,14 +576,14 @@ pub struct MemoryStore {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(deny_unknown_fields)]
-pub struct DedupStore {
+pub struct DedupSpec {
     /// Store used to store the index of each dedup slice. This store
     /// should generally be fast and small.
-    pub index_store: StoreConfig,
+    pub index_store: Box<StoreConfig>,
 
     /// The store where the individual chunks will be uploaded. This
     /// store should generally be the slower & larger store.
-    pub content_store: StoreConfig,
+    pub content_store: Box<StoreConfig>,
 
     /// Minimum size that a chunk will be when slicing up the content.
     /// Note: This setting can be increased to improve performance
@@ -592,13 +631,13 @@ pub struct DedupStore {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(deny_unknown_fields)]
-pub struct ExistenceCacheStore {
+pub struct ExistenceCacheSpec {
     /// The underlying store wrap around. All content will first flow
     /// through self before forwarding to backend. In the event there
     /// is an error detected in self, the connection to the backend
     /// will be terminated, and early termination should always cause
     /// updates to fail on the backend.
-    pub backend: StoreConfig,
+    pub backend: Box<StoreConfig>,
 
     /// Policy used to evict items out of the store. Failure to set this
     /// value will cause items to never be removed from the store causing
@@ -608,13 +647,13 @@ pub struct ExistenceCacheStore {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(deny_unknown_fields)]
-pub struct VerifyStore {
+pub struct VerifySpec {
     /// The underlying store wrap around. All content will first flow
     /// through self before forwarding to backend. In the event there
     /// is an error detected in self, the connection to the backend
     /// will be terminated, and early termination should always cause
     /// updates to fail on the backend.
-    pub backend: StoreConfig,
+    pub backend: Box<StoreConfig>,
 
     /// If set the store will verify the size of the data before accepting
     /// an upload of data.
@@ -634,13 +673,13 @@ pub struct VerifyStore {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(deny_unknown_fields)]
-pub struct CompletenessCheckingStore {
+pub struct CompletenessCheckingSpec {
     /// The underlying store that will have it's results validated before sending to client.
-    pub backend: StoreConfig,
+    pub backend: Box<StoreConfig>,
 
     /// When a request is made, the results are decoded and all output digests/files are verified
     /// to exist in this CAS store before returning success.
-    pub cas_store: StoreConfig,
+    pub cas_store: Box<StoreConfig>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, PartialEq, Clone, Copy)]
@@ -681,13 +720,13 @@ pub enum CompressionAlgorithm {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(deny_unknown_fields)]
-pub struct CompressionStore {
+pub struct CompressionSpec {
     /// The underlying store wrap around. All content will first flow
     /// through self before forwarding to backend. In the event there
     /// is an error detected in self, the connection to the backend
     /// will be terminated, and early termination should always cause
     /// updates to fail on the backend.
-    pub backend: StoreConfig,
+    pub backend: Box<StoreConfig>,
 
     /// The compression algorithm to use.
     pub compression_algorithm: CompressionAlgorithm,
@@ -726,7 +765,7 @@ pub struct EvictionPolicy {
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 #[serde(deny_unknown_fields)]
-pub struct S3Store {
+pub struct S3Spec {
     /// S3 region. Usually us-east-1, us-west-2, af-south-1, exc...
     #[serde(default, deserialize_with = "convert_string_with_shellexpand")]
     pub region: String,
@@ -825,7 +864,7 @@ pub struct GrpcEndpoint {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(deny_unknown_fields)]
-pub struct GrpcStore {
+pub struct GrpcSpec {
     /// Instance name for GRPC calls. Proxy calls will have the instance_name changed to this.
     #[serde(default, deserialize_with = "convert_string_with_shellexpand")]
     pub instance_name: String,
@@ -875,7 +914,7 @@ pub enum ErrorCode {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct RedisStore {
+pub struct RedisSpec {
     /// The hostname or IP address of the Redis server.
     /// Ex: ["redis://username:password@redis-server-url:6380/99"]
     /// 99 Represents database ID, 6380 represents the port.
@@ -999,6 +1038,9 @@ pub enum RedisMode {
     #[default]
     Standard,
 }
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct NoopSpec {}
 
 /// Retry configuration. This configuration is exponential and each iteration
 /// a jitter as a percentage is applied of the calculated delay. For example:

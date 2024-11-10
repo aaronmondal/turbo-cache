@@ -255,7 +255,7 @@ async fn valid_results_after_shutdown_test() -> Result<(), Error> {
     let temp_path = make_temp_path("temp_path");
     {
         let store = Store::new(
-            FilesystemStore::<FileEntryImpl>::new(&nativelink_config::stores::FilesystemStore {
+            FilesystemStore::<FileEntryImpl>::new(&nativelink_config::stores::FilesystemSpec {
                 content_path: content_path.clone(),
                 temp_path: temp_path.clone(),
                 eviction_policy: None,
@@ -278,7 +278,7 @@ async fn valid_results_after_shutdown_test() -> Result<(), Error> {
     {
         // With a new store ensure content is still readable (ie: restores from shutdown).
         let store = Box::pin(
-            FilesystemStore::<FileEntryImpl>::new(&nativelink_config::stores::FilesystemStore {
+            FilesystemStore::<FileEntryImpl>::new(&nativelink_config::stores::FilesystemSpec {
                 content_path,
                 temp_path,
                 eviction_policy: None,
@@ -311,7 +311,7 @@ async fn temp_files_get_deleted_on_replace_test() -> Result<(), Error> {
 
     let store = Box::pin(
         FilesystemStore::<TestFileEntry<LocalHooks>>::new(
-            &nativelink_config::stores::FilesystemStore {
+            &nativelink_config::stores::FilesystemSpec {
                 content_path: content_path.clone(),
                 temp_path: temp_path.clone(),
                 eviction_policy: Some(nativelink_config::stores::EvictionPolicy {
@@ -391,7 +391,7 @@ async fn file_continues_to_stream_on_content_replace_test() -> Result<(), Error>
 
     let store = Arc::new(
         FilesystemStore::<TestFileEntry<LocalHooks>>::new(
-            &nativelink_config::stores::FilesystemStore {
+            &nativelink_config::stores::FilesystemSpec {
                 content_path: content_path.clone(),
                 temp_path: temp_path.clone(),
                 eviction_policy: Some(nativelink_config::stores::EvictionPolicy {
@@ -514,7 +514,7 @@ async fn file_gets_cleans_up_on_cache_eviction() -> Result<(), Error> {
 
     let store = Arc::new(
         FilesystemStore::<TestFileEntry<LocalHooks>>::new(
-            &nativelink_config::stores::FilesystemStore {
+            &nativelink_config::stores::FilesystemSpec {
                 content_path: content_path.clone(),
                 temp_path: temp_path.clone(),
                 eviction_policy: Some(nativelink_config::stores::EvictionPolicy {
@@ -610,7 +610,7 @@ async fn atime_updates_on_get_part_test() -> Result<(), Error> {
     let digest1 = DigestInfo::try_new(HASH1, VALUE1.len())?;
 
     let store = Box::pin(
-        FilesystemStore::<FileEntryImpl>::new(&nativelink_config::stores::FilesystemStore {
+        FilesystemStore::<FileEntryImpl>::new(&nativelink_config::stores::FilesystemSpec {
             content_path: make_temp_path("content_path"),
             temp_path: make_temp_path("temp_path"),
             eviction_policy: None,
@@ -671,7 +671,7 @@ async fn oldest_entry_evicted_with_access_times_loaded_from_disk() -> Result<(),
 
     // Load the existing store from disk.
     let store = Box::pin(
-        FilesystemStore::<FileEntryImpl>::new(&nativelink_config::stores::FilesystemStore {
+        FilesystemStore::<FileEntryImpl>::new(&nativelink_config::stores::FilesystemSpec {
             content_path,
             temp_path: make_temp_path("temp_path"),
             eviction_policy: Some(nativelink_config::stores::EvictionPolicy {
@@ -702,7 +702,7 @@ async fn eviction_drops_file_test() -> Result<(), Error> {
     let digest1 = DigestInfo::try_new(HASH1, VALUE1.len())?;
 
     let store = Box::pin(
-        FilesystemStore::<FileEntryImpl>::new(&nativelink_config::stores::FilesystemStore {
+        FilesystemStore::<FileEntryImpl>::new(&nativelink_config::stores::FilesystemSpec {
             content_path: make_temp_path("content_path"),
             temp_path: make_temp_path("temp_path"),
             eviction_policy: None,
@@ -752,7 +752,7 @@ async fn digest_contents_replaced_continues_using_old_data() -> Result<(), Error
     let digest = DigestInfo::try_new(HASH1, VALUE1.len())?;
 
     let store = Box::pin(
-        FilesystemStore::<FileEntryImpl>::new(&nativelink_config::stores::FilesystemStore {
+        FilesystemStore::<FileEntryImpl>::new(&nativelink_config::stores::FilesystemSpec {
             content_path: make_temp_path("content_path"),
             temp_path: make_temp_path("temp_path"),
             eviction_policy: None,
@@ -820,7 +820,7 @@ async fn eviction_on_insert_calls_unref_once() -> Result<(), Error> {
 
     let store = Box::pin(
         FilesystemStore::<TestFileEntry<LocalHooks>>::new(
-            &nativelink_config::stores::FilesystemStore {
+            &nativelink_config::stores::FilesystemSpec {
                 content_path: make_temp_path("content_path"),
                 temp_path: make_temp_path("temp_path"),
                 eviction_policy: Some(nativelink_config::stores::EvictionPolicy {
@@ -917,7 +917,7 @@ async fn rename_on_insert_fails_due_to_filesystem_error_proper_cleanup_happens()
 
     let store = Box::pin(
         FilesystemStore::<TestFileEntry<LocalHooks>>::new(
-            &nativelink_config::stores::FilesystemStore {
+            &nativelink_config::stores::FilesystemSpec {
                 content_path: content_path.clone(),
                 temp_path: temp_path.clone(),
                 eviction_policy: None,
@@ -1004,7 +1004,7 @@ async fn get_part_timeout_test() -> Result<(), Error> {
 
     let store = Arc::new(
         FilesystemStore::<FileEntryImpl>::new_with_timeout_and_rename_fn(
-            &nativelink_config::stores::FilesystemStore {
+            &nativelink_config::stores::FilesystemSpec {
                 content_path: content_path.clone(),
                 temp_path: temp_path.clone(),
                 read_buffer_size: 1,
@@ -1051,7 +1051,7 @@ async fn get_part_is_zero_digest() -> Result<(), Error> {
 
     let store = Arc::new(
         FilesystemStore::<FileEntryImpl>::new_with_timeout_and_rename_fn(
-            &nativelink_config::stores::FilesystemStore {
+            &nativelink_config::stores::FilesystemSpec {
                 content_path: content_path.clone(),
                 temp_path: temp_path.clone(),
                 read_buffer_size: 1,
@@ -1118,7 +1118,7 @@ async fn has_with_results_on_zero_digests() -> Result<(), Error> {
 
     let store = Arc::new(
         FilesystemStore::<FileEntryImpl>::new_with_timeout_and_rename_fn(
-            &nativelink_config::stores::FilesystemStore {
+            &nativelink_config::stores::FilesystemSpec {
                 content_path: content_path.clone(),
                 temp_path: temp_path.clone(),
                 read_buffer_size: 1,
@@ -1161,7 +1161,7 @@ async fn update_file_future_drops_before_rename() -> Result<(), Error> {
     let content_path = make_temp_path("content_path");
     let store = Arc::pin(
         FilesystemStore::<FileEntryImpl>::new_with_timeout_and_rename_fn(
-            &nativelink_config::stores::FilesystemStore {
+            &nativelink_config::stores::FilesystemSpec {
                 content_path: content_path.clone(),
                 temp_path: make_temp_path("temp_path"),
                 eviction_policy: None,
@@ -1245,7 +1245,7 @@ async fn deleted_file_removed_from_store() -> Result<(), Error> {
 
     let store = Box::pin(
         FilesystemStore::<FileEntryImpl>::new_with_timeout_and_rename_fn(
-            &nativelink_config::stores::FilesystemStore {
+            &nativelink_config::stores::FilesystemSpec {
                 content_path: content_path.clone(),
                 temp_path: temp_path.clone(),
                 read_buffer_size: 1,
@@ -1290,7 +1290,7 @@ async fn get_file_size_uses_block_size() -> Result<(), Error> {
 
     let store = Box::pin(
         FilesystemStore::<FileEntryImpl>::new_with_timeout_and_rename_fn(
-            &nativelink_config::stores::FilesystemStore {
+            &nativelink_config::stores::FilesystemSpec {
                 content_path: content_path.clone(),
                 temp_path: temp_path.clone(),
                 read_buffer_size: 1,
@@ -1336,7 +1336,7 @@ async fn update_with_whole_file_closes_file() -> Result<(), Error> {
     let digest = DigestInfo::try_new(HASH1, value.len())?;
 
     let store = Box::pin(
-        FilesystemStore::<FileEntryImpl>::new(&nativelink_config::stores::FilesystemStore {
+        FilesystemStore::<FileEntryImpl>::new(&nativelink_config::stores::FilesystemSpec {
             content_path: content_path.clone(),
             temp_path: temp_path.clone(),
             read_buffer_size: 1,
@@ -1383,16 +1383,18 @@ async fn update_with_whole_file_slow_path_when_low_file_descriptors() -> Result<
 
     let store = FastSlowStore::new(
         // Note: The config is not needed for this test, so use dummy data.
-        &nativelink_config::stores::FastSlowStore {
-            fast: nativelink_config::stores::StoreConfig::memory(
-                nativelink_config::stores::MemoryStore::default(),
-            ),
-            slow: nativelink_config::stores::StoreConfig::memory(
-                nativelink_config::stores::MemoryStore::default(),
-            ),
+        &nativelink_config::stores::FastSlowSpec {
+            fast: Box::new(nativelink_config::stores::StoreConfig::Memory {
+                name: "fast".to_string(),
+                spec: nativelink_config::stores::MemorySpec::default(),
+            }),
+            slow: Box::new(nativelink_config::stores::StoreConfig::Memory {
+                name: "slow".to_string(),
+                spec: nativelink_config::stores::MemorySpec::default(),
+            }),
         },
         Store::new(
-            FilesystemStore::<FileEntryImpl>::new(&nativelink_config::stores::FilesystemStore {
+            FilesystemStore::<FileEntryImpl>::new(&nativelink_config::stores::FilesystemSpec {
                 content_path: make_temp_path("content_path"),
                 temp_path: make_temp_path("temp_path"),
                 read_buffer_size: 1,
@@ -1401,7 +1403,7 @@ async fn update_with_whole_file_slow_path_when_low_file_descriptors() -> Result<
             .await?,
         ),
         Store::new(
-            FilesystemStore::<FileEntryImpl>::new(&nativelink_config::stores::FilesystemStore {
+            FilesystemStore::<FileEntryImpl>::new(&nativelink_config::stores::FilesystemSpec {
                 content_path: make_temp_path("content_path1"),
                 temp_path: make_temp_path("temp_path1"),
                 read_buffer_size: 1,
@@ -1443,7 +1445,7 @@ async fn update_with_whole_file_uses_same_inode() -> Result<(), Error> {
 
     let store = Box::pin(
         FilesystemStore::<FileEntryImpl>::new_with_timeout_and_rename_fn(
-            &nativelink_config::stores::FilesystemStore {
+            &nativelink_config::stores::FilesystemSpec {
                 content_path: content_path.clone(),
                 temp_path: temp_path.clone(),
                 read_buffer_size: 1,

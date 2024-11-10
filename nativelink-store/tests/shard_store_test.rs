@@ -28,15 +28,19 @@ use rand::{Rng, SeedableRng};
 const MEGABYTE_SZ: usize = 1024 * 1024;
 
 fn make_stores(weights: &[u32]) -> (Arc<ShardStore>, Vec<Arc<MemoryStore>>) {
-    let memory_store_config = nativelink_config::stores::MemoryStore::default();
-    let store_config = nativelink_config::stores::StoreConfig::memory(memory_store_config.clone());
+    let memory_store_spec = nativelink_config::stores::MemorySpec::default();
+    let store_config = nativelink_config::stores::StoreConfig::Memory {
+        name: "memory".to_string(),
+        spec: memory_store_spec.clone(),
+    };
+
     let stores: Vec<_> = weights
         .iter()
-        .map(|_| MemoryStore::new(&memory_store_config))
+        .map(|_| MemoryStore::new(&memory_store_spec))
         .collect();
 
     let shard_store = ShardStore::new(
-        &nativelink_config::stores::ShardStore {
+        &nativelink_config::stores::ShardSpec {
             stores: weights
                 .iter()
                 .map(|weight| nativelink_config::stores::ShardConfig {

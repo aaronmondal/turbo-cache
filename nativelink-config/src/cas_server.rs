@@ -725,7 +725,7 @@ pub struct GlobalConfig {
 pub struct CasConfig {
     /// List of stores available to use in this config.
     /// The keys can be used in other configs when needing to reference a store.
-    pub stores: HashMap<StoreRefName, StoreConfig>,
+    pub stores: Vec<StoreConfig>,
 
     /// Worker configurations used to execute jobs.
     pub workers: Option<Vec<WorkerConfig>>,
@@ -733,7 +733,7 @@ pub struct CasConfig {
     /// List of schedulers available to use in this config.
     /// The keys can be used in other configs when needing to reference a
     /// scheduler.
-    pub schedulers: Option<HashMap<SchedulerRefName, SchedulerConfig>>,
+    pub schedulers: Option<Vec<SchedulerConfig>>,
 
     /// Servers to setup for this process.
     pub servers: Vec<ServerConfig>,
