@@ -36,19 +36,21 @@ const MEGABYTE_SZ: usize = 1024 * 1024;
 
 fn make_stores() -> (Store, Store, Store) {
     let fast_store = Store::new(MemoryStore::new(
-        &nativelink_config::stores::MemoryStore::default(),
+        &nativelink_config::stores::MemorySpec::default(),
     ));
     let slow_store = Store::new(MemoryStore::new(
-        &nativelink_config::stores::MemoryStore::default(),
+        &nativelink_config::stores::MemorySpec::default(),
     ));
     let fast_slow_store = Store::new(FastSlowStore::new(
-        &nativelink_config::stores::FastSlowStore {
-            fast: nativelink_config::stores::StoreConfig::memory(
-                nativelink_config::stores::MemoryStore::default(),
-            ),
-            slow: nativelink_config::stores::StoreConfig::memory(
-                nativelink_config::stores::MemoryStore::default(),
-            ),
+        &nativelink_config::stores::FastSlowSpec {
+            fast: Box::new(nativelink_config::stores::StoreConfig::Memory {
+                name: "fast".to_string(),
+                spec: nativelink_config::stores::MemorySpec::default(),
+            }),
+            slow: Box::new(nativelink_config::stores::StoreConfig::Memory {
+                name: "slow".to_string(),
+                spec: nativelink_config::stores::MemorySpec::default(),
+            }),
         },
         fast_store.clone(),
         slow_store.clone(),
@@ -336,13 +338,15 @@ async fn drop_on_eof_completes_store_futures() -> Result<(), Error> {
     }));
 
     let fast_slow_store = FastSlowStore::new(
-        &nativelink_config::stores::FastSlowStore {
-            fast: nativelink_config::stores::StoreConfig::memory(
-                nativelink_config::stores::MemoryStore::default(),
-            ),
-            slow: nativelink_config::stores::StoreConfig::memory(
-                nativelink_config::stores::MemoryStore::default(),
-            ),
+        &nativelink_config::stores::FastSlowSpec {
+            fast: Box::new(nativelink_config::stores::StoreConfig::Memory {
+                name: "fast".to_string(),
+                spec: nativelink_config::stores::MemorySpec::default(),
+            }),
+            slow: Box::new(nativelink_config::stores::StoreConfig::Memory {
+                name: "slow".to_string(),
+                spec: nativelink_config::stores::MemorySpec::default(),
+            }),
         },
         fast_store,
         slow_store,
@@ -379,19 +383,21 @@ async fn drop_on_eof_completes_store_futures() -> Result<(), Error> {
 #[nativelink_test]
 async fn ignore_value_in_fast_store() -> Result<(), Error> {
     let fast_store = Store::new(MemoryStore::new(
-        &nativelink_config::stores::MemoryStore::default(),
+        &nativelink_config::stores::MemorySpec::default(),
     ));
     let slow_store = Store::new(MemoryStore::new(
-        &nativelink_config::stores::MemoryStore::default(),
+        &nativelink_config::stores::MemorySpec::default(),
     ));
     let fast_slow_store = Arc::new(FastSlowStore::new(
-        &nativelink_config::stores::FastSlowStore {
-            fast: nativelink_config::stores::StoreConfig::memory(
-                nativelink_config::stores::MemoryStore::default(),
-            ),
-            slow: nativelink_config::stores::StoreConfig::memory(
-                nativelink_config::stores::MemoryStore::default(),
-            ),
+        &nativelink_config::stores::FastSlowSpec {
+            fast: Box::new(nativelink_config::stores::StoreConfig::Memory {
+                name: "fast".to_string(),
+                spec: nativelink_config::stores::MemorySpec::default(),
+            }),
+            slow: Box::new(nativelink_config::stores::StoreConfig::Memory {
+                name: "slow".to_string(),
+                spec: nativelink_config::stores::MemorySpec::default(),
+            }),
         },
         fast_store.clone(),
         slow_store,
@@ -411,14 +417,18 @@ async fn ignore_value_in_fast_store() -> Result<(), Error> {
 #[nativelink_test]
 async fn has_checks_fast_store_when_noop() -> Result<(), Error> {
     let fast_store = Store::new(MemoryStore::new(
-        &nativelink_config::stores::MemoryStore::default(),
+        &nativelink_config::stores::MemorySpec::default(),
     ));
     let slow_store = Store::new(NoopStore::new());
-    let fast_slow_store_config = nativelink_config::stores::FastSlowStore {
-        fast: nativelink_config::stores::StoreConfig::memory(
-            nativelink_config::stores::MemoryStore::default(),
-        ),
-        slow: nativelink_config::stores::StoreConfig::noop,
+    let fast_slow_store_config = nativelink_config::stores::FastSlowSpec {
+        fast: Box::new(nativelink_config::stores::StoreConfig::Memory {
+            name: "fast".to_string(),
+            spec: nativelink_config::stores::MemorySpec::default(),
+        }),
+        slow: Box::new(nativelink_config::stores::StoreConfig::Noop {
+            name: "slow".to_string(),
+            spec: nativelink_config::stores::NoopSpec {},
+        }),
     };
     let fast_slow_store = Arc::new(FastSlowStore::new(
         &fast_slow_store_config,

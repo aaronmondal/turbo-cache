@@ -88,20 +88,26 @@ async fn setup_stores() -> Result<
     ),
     Error,
 > {
-    let fast_config = nativelink_config::stores::FilesystemStore {
+    let fast_spec = nativelink_config::stores::FilesystemSpec {
         content_path: make_temp_path("content_path"),
         temp_path: make_temp_path("temp_path"),
         eviction_policy: None,
         ..Default::default()
     };
-    let slow_config = nativelink_config::stores::MemoryStore::default();
-    let fast_store = FilesystemStore::new(&fast_config).await?;
-    let slow_store = MemoryStore::new(&slow_config);
-    let ac_store = MemoryStore::new(&slow_config);
+    let slow_spec = nativelink_config::stores::MemorySpec::default();
+    let fast_store = FilesystemStore::new(&fast_spec).await?;
+    let slow_store = MemoryStore::new(&slow_spec);
+    let ac_store = MemoryStore::new(&slow_spec);
     let cas_store = FastSlowStore::new(
-        &nativelink_config::stores::FastSlowStore {
-            fast: nativelink_config::stores::StoreConfig::filesystem(fast_config),
-            slow: nativelink_config::stores::StoreConfig::memory(slow_config),
+        &nativelink_config::stores::FastSlowSpec {
+            fast: Box::new(nativelink_config::stores::StoreConfig::Filesystem {
+                name: "fast".to_string(),
+                spec: fast_spec,
+            }),
+            slow: Box::new(nativelink_config::stores::StoreConfig::Memory {
+                name: "slow".to_string(),
+                spec: slow_spec,
+            }),
         },
         Store::new(fast_store.clone()),
         Store::new(slow_store.clone()),

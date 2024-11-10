@@ -29,7 +29,8 @@ use mimalloc::MiMalloc;
 use nativelink_config::cas_server::{
     CasConfig, GlobalConfig, HttpCompressionAlgorithm, ListenerConfig, ServerConfig, WorkerConfig,
 };
-use nativelink_config::stores::ConfigDigestHashFunction;
+use nativelink_config::schedulers::SchedulerConfig;
+use nativelink_config::stores::{ConfigDigestHashFunction, StoreConfig};
 use nativelink_error::{make_err, Code, Error, ResultExt};
 use nativelink_metric::{
     MetricFieldData, MetricKind, MetricPublishKnownKindData, MetricsComponent, RootMetricsComponent,
@@ -182,29 +183,56 @@ async fn inner_main(
     {
         let mut health_registry_lock = health_registry_builder.lock().await;
 
-        for (name, store_cfg) in cfg.stores {
-            let health_component_name = format!("stores/{name}");
+        for store_cfg in cfg.stores {
+            let derefed_cfg = &store_cfg;
+            let store_name = {
+                let (StoreConfig::Memory { name, .. }
+                | StoreConfig::Filesystem { name, .. }
+                | StoreConfig::S3 { name, .. }
+                | StoreConfig::Verify { name, .. }
+                | StoreConfig::CompletenessChecking { name, .. }
+                | StoreConfig::Compression { name, .. }
+                | StoreConfig::Dedup { name, .. }
+                | StoreConfig::ExistenceCache { name, .. }
+                | StoreConfig::FastSlow { name, .. }
+                | StoreConfig::Shard { name, .. }
+                | StoreConfig::Ref { name, .. }
+                | StoreConfig::SizePartitioning { name, .. }
+                | StoreConfig::Grpc { name, .. }
+                | StoreConfig::Redis { name, .. }
+                | StoreConfig::Noop { name, .. }) = derefed_cfg;
+                name
+            };
+            let health_component_name = format!("stores/{store_name}");
             let mut health_register_store =
                 health_registry_lock.sub_builder(&health_component_name);
             let store = store_factory(&store_cfg, &store_manager, Some(&mut health_register_store))
                 .await
-                .err_tip(|| format!("Failed to create store '{name}'"))?;
-            store_manager.add_store(&name, store);
+                .err_tip(|| format!("Failed to create store '{store_name}'"))?;
+            store_manager.add_store(store_name, store);
         }
     }
 
     let mut action_schedulers = HashMap::new();
     let mut worker_schedulers = HashMap::new();
     if let Some(schedulers_cfg) = cfg.schedulers {
-        for (name, scheduler_cfg) in schedulers_cfg {
+        for scheduler_cfg in schedulers_cfg {
+            let derefed_cfg = &scheduler_cfg;
+            let scheduler_name = {
+                let (SchedulerConfig::Simple { name, .. }
+                | SchedulerConfig::Grpc { name, .. }
+                | SchedulerConfig::CacheLookup { name, .. }
+                | SchedulerConfig::PropertyModifier { name, .. }) = derefed_cfg;
+                name
+            };
             let (maybe_action_scheduler, maybe_worker_scheduler) =
                 scheduler_factory(&scheduler_cfg, &store_manager)
-                    .err_tip(|| format!("Failed to create scheduler '{name}'"))?;
+                    .err_tip(|| format!("Failed to create scheduler '{scheduler_name}'"))?;
             if let Some(action_scheduler) = maybe_action_scheduler {
-                action_schedulers.insert(name.clone(), action_scheduler.clone());
+                action_schedulers.insert(scheduler_name.clone(), action_scheduler.clone());
             }
             if let Some(worker_scheduler) = maybe_worker_scheduler {
-                worker_schedulers.insert(name.clone(), worker_scheduler.clone());
+                worker_schedulers.insert(scheduler_name.clone(), worker_scheduler.clone());
             }
         }
     }

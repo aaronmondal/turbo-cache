@@ -37,18 +37,20 @@ fn setup_stores(
     Arc<MemoryStore>,
     Arc<MemoryStore>,
 ) {
-    let lower_memory_store = MemoryStore::new(&nativelink_config::stores::MemoryStore::default());
-    let upper_memory_store = MemoryStore::new(&nativelink_config::stores::MemoryStore::default());
+    let lower_memory_store = MemoryStore::new(&nativelink_config::stores::MemorySpec::default());
+    let upper_memory_store = MemoryStore::new(&nativelink_config::stores::MemorySpec::default());
 
     let size_part_store = SizePartitioningStore::new(
-        &nativelink_config::stores::SizePartitioningStore {
+        &nativelink_config::stores::SizePartitioningSpec {
             size,
-            lower_store: nativelink_config::stores::StoreConfig::memory(
-                nativelink_config::stores::MemoryStore::default(),
-            ),
-            upper_store: nativelink_config::stores::StoreConfig::memory(
-                nativelink_config::stores::MemoryStore::default(),
-            ),
+            lower_store: Box::new(nativelink_config::stores::StoreConfig::Memory {
+                name: "lower".to_string(),
+                spec: nativelink_config::stores::MemorySpec::default(),
+            }),
+            upper_store: Box::new(nativelink_config::stores::StoreConfig::Memory {
+                name: "upper".to_string(),
+                spec: nativelink_config::stores::MemorySpec::default(),
+            }),
         },
         Store::new(lower_memory_store.clone()),
         Store::new(upper_memory_store.clone()),

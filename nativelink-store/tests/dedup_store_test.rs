@@ -23,14 +23,16 @@ use pretty_assertions::assert_eq;
 use rand::rngs::SmallRng;
 use rand::{Rng, SeedableRng};
 
-fn make_default_config() -> nativelink_config::stores::DedupStore {
-    nativelink_config::stores::DedupStore {
-        index_store: nativelink_config::stores::StoreConfig::memory(
-            nativelink_config::stores::MemoryStore::default(),
-        ),
-        content_store: nativelink_config::stores::StoreConfig::memory(
-            nativelink_config::stores::MemoryStore::default(),
-        ),
+fn make_default_config() -> nativelink_config::stores::DedupSpec {
+    nativelink_config::stores::DedupSpec {
+        index_store: Box::new(nativelink_config::stores::StoreConfig::Memory {
+            name: "index".to_string(),
+            spec: nativelink_config::stores::MemorySpec::default(),
+        }),
+        content_store: Box::new(nativelink_config::stores::StoreConfig::Memory {
+            name: "content".to_string(),
+            spec: nativelink_config::stores::MemorySpec::default(),
+        }),
         min_size: 8 * 1024,
         normal_size: 32 * 1024,
         max_size: 128 * 1024,
@@ -54,10 +56,10 @@ async fn simple_round_trip_test() -> Result<(), Error> {
     let store = DedupStore::new(
         &make_default_config(),
         Store::new(MemoryStore::new(
-            &nativelink_config::stores::MemoryStore::default(),
+            &nativelink_config::stores::MemorySpec::default(),
         )), // Index store.
         Store::new(MemoryStore::new(
-            &nativelink_config::stores::MemoryStore::default(),
+            &nativelink_config::stores::MemorySpec::default(),
         )), // Content store.
     )?;
 
@@ -85,11 +87,11 @@ async fn check_missing_last_chunk_test() -> Result<(), Error> {
         "7c8608f5b079bef66c45bd67f7d8ede15d2e1830ea38fd8ad4c6de08b6f21a0c";
     const LAST_CHUNK_SIZE: usize = 25779;
 
-    let content_store = MemoryStore::new(&nativelink_config::stores::MemoryStore::default());
+    let content_store = MemoryStore::new(&nativelink_config::stores::MemorySpec::default());
     let store = DedupStore::new(
         &make_default_config(),
         Store::new(MemoryStore::new(
-            &nativelink_config::stores::MemoryStore::default(),
+            &nativelink_config::stores::MemorySpec::default(),
         )), // Index store.
         Store::new(content_store.clone()),
     )?;
@@ -133,10 +135,10 @@ async fn fetch_part_test() -> Result<(), Error> {
     let store = DedupStore::new(
         &make_default_config(),
         Store::new(MemoryStore::new(
-            &nativelink_config::stores::MemoryStore::default(),
+            &nativelink_config::stores::MemorySpec::default(),
         )), // Index store.
         Store::new(MemoryStore::new(
-            &nativelink_config::stores::MemoryStore::default(),
+            &nativelink_config::stores::MemorySpec::default(),
         )), // Content store.
     )?;
 
@@ -173,23 +175,25 @@ async fn check_length_not_set_with_chunk_read_beyond_first_chunk_regression_test
     const START_READ_BYTE: usize = 7;
 
     let store = DedupStore::new(
-        &nativelink_config::stores::DedupStore {
-            index_store: nativelink_config::stores::StoreConfig::memory(
-                nativelink_config::stores::MemoryStore::default(),
-            ),
-            content_store: nativelink_config::stores::StoreConfig::memory(
-                nativelink_config::stores::MemoryStore::default(),
-            ),
+        &nativelink_config::stores::DedupSpec {
+            index_store: Box::new(nativelink_config::stores::StoreConfig::Memory {
+                name: "index".to_string(),
+                spec: nativelink_config::stores::MemorySpec::default(),
+            }),
+            content_store: Box::new(nativelink_config::stores::StoreConfig::Memory {
+                name: "content".to_string(),
+                spec: nativelink_config::stores::MemorySpec::default(),
+            }),
             min_size: 5,
             normal_size: 6,
             max_size: 7,
             max_concurrent_fetch_per_get: 10,
         },
         Store::new(MemoryStore::new(
-            &nativelink_config::stores::MemoryStore::default(),
+            &nativelink_config::stores::MemorySpec::default(),
         )), // Index store.
         Store::new(MemoryStore::new(
-            &nativelink_config::stores::MemoryStore::default(),
+            &nativelink_config::stores::MemorySpec::default(),
         )), // Content store.
     )?;
 
@@ -226,23 +230,25 @@ async fn check_chunk_boundary_reads_test() -> Result<(), Error> {
     const START_READ_BYTE: usize = 10;
 
     let store = DedupStore::new(
-        &nativelink_config::stores::DedupStore {
-            index_store: nativelink_config::stores::StoreConfig::memory(
-                nativelink_config::stores::MemoryStore::default(),
-            ),
-            content_store: nativelink_config::stores::StoreConfig::memory(
-                nativelink_config::stores::MemoryStore::default(),
-            ),
+        &nativelink_config::stores::DedupSpec {
+            index_store: Box::new(nativelink_config::stores::StoreConfig::Memory {
+                name: "index".to_string(),
+                spec: nativelink_config::stores::MemorySpec::default(),
+            }),
+            content_store: Box::new(nativelink_config::stores::StoreConfig::Memory {
+                name: "content".to_string(),
+                spec: nativelink_config::stores::MemorySpec::default(),
+            }),
             min_size: 5,
             normal_size: 6,
             max_size: 7,
             max_concurrent_fetch_per_get: 10,
         },
         Store::new(MemoryStore::new(
-            &nativelink_config::stores::MemoryStore::default(),
+            &nativelink_config::stores::MemorySpec::default(),
         )), // Index store.
         Store::new(MemoryStore::new(
-            &nativelink_config::stores::MemoryStore::default(),
+            &nativelink_config::stores::MemorySpec::default(),
         )), // Content store.
     )?;
 
@@ -307,8 +313,8 @@ async fn check_chunk_boundary_reads_test() -> Result<(), Error> {
 async fn has_checks_content_store() -> Result<(), Error> {
     const DATA_SIZE: usize = MEGABYTE_SZ / 4;
 
-    let index_store = MemoryStore::new(&nativelink_config::stores::MemoryStore::default());
-    let content_store = MemoryStore::new(&nativelink_config::stores::MemoryStore {
+    let index_store = MemoryStore::new(&nativelink_config::stores::MemorySpec::default());
+    let content_store = MemoryStore::new(&nativelink_config::stores::MemorySpec {
         eviction_policy: Some(nativelink_config::stores::EvictionPolicy {
             max_count: 10,
             ..Default::default()
@@ -373,8 +379,8 @@ async fn has_checks_content_store() -> Result<(), Error> {
 async fn has_with_no_existing_index_returns_none_test() -> Result<(), Error> {
     const DATA_SIZE: usize = 10;
 
-    let index_store = MemoryStore::new(&nativelink_config::stores::MemoryStore::default());
-    let content_store = MemoryStore::new(&nativelink_config::stores::MemoryStore {
+    let index_store = MemoryStore::new(&nativelink_config::stores::MemorySpec::default());
+    let content_store = MemoryStore::new(&nativelink_config::stores::MemorySpec {
         eviction_policy: Some(nativelink_config::stores::EvictionPolicy {
             max_count: 10,
             ..Default::default()
@@ -404,8 +410,8 @@ async fn has_with_no_existing_index_returns_none_test() -> Result<(), Error> {
 /// properly return Some(0).
 #[nativelink_test]
 async fn has_with_zero_digest_returns_some_test() -> Result<(), Error> {
-    let index_store = MemoryStore::new(&nativelink_config::stores::MemoryStore::default());
-    let content_store = MemoryStore::new(&nativelink_config::stores::MemoryStore {
+    let index_store = MemoryStore::new(&nativelink_config::stores::MemorySpec::default());
+    let content_store = MemoryStore::new(&nativelink_config::stores::MemorySpec {
         eviction_policy: Some(nativelink_config::stores::EvictionPolicy {
             max_count: 10,
             ..Default::default()
