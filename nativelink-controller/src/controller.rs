@@ -1,6 +1,6 @@
-use nativelink_config::cas_server::{CasConfig, ServerConfig, GlobalConfig};
-use nativelink_config::stores::StoreConfig;
+use nativelink_config::cas_server::CasConfig;
 use nativelink_config::schedulers::SchedulerConfig;
+use nativelink_config::stores::StoreConfig;
 use std::collections::HashMap;
 
 use kube::CustomResource;
@@ -52,22 +52,6 @@ pub struct NativeLinkSpec {
 
 fn default_replicas() -> i32 {
     1
-}
-
-// Remove deny_unknown_fields from the source structs by wrapping them
-// TODO(aaronmodal): Doesn't work. Either make it work or remove the denies.
-#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
-pub struct KubeCasConfig(#[schemars(with = "CasConfigSchema")] pub CasConfig);
-
-// Schema definition without additionalProperties
-// TODO(aaronmondal): Needs revisit.
-#[derive(JsonSchema)]
-#[schemars(rename = "CasConfig")]
-pub struct CasConfigSchema {
-    pub stores: std::collections::HashMap<String, StoreConfig>,
-    pub schedulers: Option<std::collections::HashMap<String, SchedulerConfig>>,
-    pub servers: Vec<ServerConfig>,
-    pub global: Option<GlobalConfig>,
 }
 
 // TODO(aaronmondal): Probably unnecessary to map these out. Consider importing

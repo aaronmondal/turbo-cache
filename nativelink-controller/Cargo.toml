@@ -9,6 +9,11 @@ name = "nativelink-controller"
 [[bin]]
 name = "generate-crd"
 
+[features]
+crd = [
+  "nativelink-config/crd"
+]
+
 [dependencies]
 nativelink-config = { path = "../nativelink-config" }
 

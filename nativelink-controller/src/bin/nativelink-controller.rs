@@ -265,11 +265,17 @@ async fn main() -> anyhow::Result<()> {
     let client = Client::try_default().await?;
 
     let nativelinks: Api<NativeLink> = Api::all(client.clone());
+    if let Ok(list) = nativelinks.list(&Default::default()).await {
+        for item in list {
+            info!("Raw item: {}", serde_json::to_string_pretty(&item)?);
+        }
+    }
     let context = Context {
         client: client.clone(),
     };
 
     info!("Starting NativeLink controller");
+    info!("ASDF");
     Controller::new(nativelinks, watcher::Config::default())
         .shutdown_on_signal()
         .run(reconcile, requeue_error_policy, Arc::new(context))

@@ -14,6 +14,7 @@
 
 use std::sync::Arc;
 
+use nativelink_config::stores::{MemorySpec, ShardConfig, ShardSpec, StoreRef};
 use nativelink_error::Error;
 use nativelink_macro::nativelink_test;
 use nativelink_store::memory_store::MemoryStore;
@@ -28,11 +29,8 @@ use rand::{Rng, SeedableRng};
 const MEGABYTE_SZ: usize = 1024 * 1024;
 
 fn make_stores(weights: &[u32]) -> (Arc<ShardStore>, Vec<Arc<MemoryStore>>) {
-    let memory_store_spec = nativelink_config::stores::MemorySpec::default();
-    let store_config = nativelink_config::stores::StoreConfig::Memory {
-        name: "memory".to_string(),
-        spec: memory_store_spec.clone(),
-    };
+    let memory_store_spec = MemorySpec::default();
+    let store_config = StoreRef::new("memory", memory_store_spec.clone());
 
     let stores: Vec<_> = weights
         .iter()
@@ -40,10 +38,10 @@ fn make_stores(weights: &[u32]) -> (Arc<ShardStore>, Vec<Arc<MemoryStore>>) {
         .collect();
 
     let shard_store = ShardStore::new(
-        &nativelink_config::stores::ShardSpec {
+        &ShardSpec {
             stores: weights
                 .iter()
-                .map(|weight| nativelink_config::stores::ShardConfig {
+                .map(|weight| ShardConfig {
                     store: store_config.clone(),
                     weight: Some(*weight),
                 })

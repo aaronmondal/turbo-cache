@@ -24,6 +24,7 @@ rust_library(
         "@crates//:humantime",
         "@crates//:schemars",
         "@crates//:serde",
+        "@crates//:serde_json",
         "@crates//:shellexpand",
     ],
 )

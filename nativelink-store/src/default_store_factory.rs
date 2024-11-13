@@ -18,7 +18,7 @@ use std::time::SystemTime;
 
 use futures::stream::FuturesOrdered;
 use futures::{Future, TryStreamExt};
-use nativelink_config::stores::StoreConfig;
+use nativelink_config::stores::{StoreConfig, StoreRef, StoreSpec};
 use nativelink_error::Error;
 use nativelink_util::health_utils::HealthRegistryBuilder;
 use nativelink_util::store_trait::{Store, StoreDriver};
@@ -43,53 +43,53 @@ use crate::verify_store::VerifyStore;
 type FutureMaybeStore<'a> = Box<dyn Future<Output = Result<Store, Error>> + 'a>;
 
 pub fn store_factory<'a>(
-    config: &'a StoreConfig,
+    config: &'a StoreRef,
     store_manager: &'a Arc<StoreManager>,
     maybe_health_registry_builder: Option<&'a mut HealthRegistryBuilder>,
 ) -> Pin<FutureMaybeStore<'a>> {
     Box::pin(async move {
-        let store: Arc<dyn StoreDriver> = match &config {
-            StoreConfig::Memory { name: _, spec } => MemoryStore::new(spec),
-            StoreConfig::S3 { name: _, spec } => S3Store::new(spec, SystemTime::now).await?,
-            StoreConfig::Redis { name: _, spec } => RedisStore::new(spec.clone())?,
-            StoreConfig::Verify { name: _, spec } => VerifyStore::new(
+        let store_config: StoreConfig = config.clone().into();
+
+        let store: Arc<dyn StoreDriver> = match &store_config.spec {
+            StoreSpec::Memory(spec) => MemoryStore::new(spec),
+            StoreSpec::S3(spec) => S3Store::new(spec, SystemTime::now).await?,
+            StoreSpec::Redis(spec) => RedisStore::new(spec.clone())?,
+            StoreSpec::Verify(spec) => VerifyStore::new(
                 spec,
                 store_factory(&spec.backend, store_manager, None).await?,
             ),
-            StoreConfig::Compression { name: _, spec } => CompressionStore::new(
+            StoreSpec::Compression(spec) => CompressionStore::new(
                 &spec.clone(),
                 store_factory(&spec.backend, store_manager, None).await?,
             )?,
-            StoreConfig::Dedup { name: _, spec } => DedupStore::new(
+            StoreSpec::Dedup(spec) => DedupStore::new(
                 spec,
                 store_factory(&spec.index_store, store_manager, None).await?,
                 store_factory(&spec.content_store, store_manager, None).await?,
             )?,
-            StoreConfig::ExistenceCache { name: _, spec } => ExistenceCacheStore::new(
+            StoreSpec::ExistenceCache(spec) => ExistenceCacheStore::new(
                 spec,
                 store_factory(&spec.backend, store_manager, None).await?,
             ),
-            StoreConfig::CompletenessChecking { name: _, spec } => CompletenessCheckingStore::new(
+            StoreSpec::CompletenessChecking(spec) => CompletenessCheckingStore::new(
                 store_factory(&spec.backend, store_manager, None).await?,
                 store_factory(&spec.cas_store, store_manager, None).await?,
             ),
-            StoreConfig::FastSlow { name: _, spec } => FastSlowStore::new(
+            StoreSpec::FastSlow(spec) => FastSlowStore::new(
                 spec,
                 store_factory(&spec.fast, store_manager, None).await?,
                 store_factory(&spec.slow, store_manager, None).await?,
             ),
-            StoreConfig::Filesystem { name: _, spec } => <FilesystemStore>::new(spec).await?,
-            StoreConfig::Ref { name: _, spec } => {
-                RefStore::new(spec, Arc::downgrade(store_manager))
-            }
-            StoreConfig::SizePartitioning { name: _, spec } => SizePartitioningStore::new(
+            StoreSpec::Filesystem(spec) => <FilesystemStore>::new(spec).await?,
+            StoreSpec::Ref(spec) => RefStore::new(spec, Arc::downgrade(store_manager)),
+            StoreSpec::SizePartitioning(spec) => SizePartitioningStore::new(
                 spec,
                 store_factory(&spec.lower_store, store_manager, None).await?,
                 store_factory(&spec.upper_store, store_manager, None).await?,
             ),
-            StoreConfig::Grpc { name: _, spec } => GrpcStore::new(spec).await?,
-            StoreConfig::Noop { name: _, spec: _ } => NoopStore::new(),
-            StoreConfig::Shard { name: _, spec } => {
+            StoreSpec::Grpc(spec) => GrpcStore::new(spec).await?,
+            StoreSpec::Noop(_spec) => NoopStore::new(),
+            StoreSpec::Shard(spec) => {
                 let stores = spec
                     .stores
                     .iter()

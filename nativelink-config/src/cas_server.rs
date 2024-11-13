@@ -62,6 +62,7 @@ pub struct HttpCompressionConfig {
     /// see: <https://github.com/tracemachina/nativelink/issues/109>
     ///
     /// Default: `HttpCompressionAlgorithm::none`
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub send_compression_algorithm: Option<HttpCompressionAlgorithm>,
 
     /// The compression algorithm that the server will accept from clients.
@@ -514,6 +515,7 @@ pub struct UploadActionResultConfig {
     ///
     /// Default: UploadCacheResultsStrategy::FailuresOnly
     #[serde(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub upload_historical_results_strategy: Option<UploadCacheResultsStrategy>,
 
     /// Template to use for the `ExecuteResponse.message` property. This message

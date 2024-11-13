@@ -30,7 +30,7 @@ use nativelink_config::cas_server::{
     CasConfig, GlobalConfig, HttpCompressionAlgorithm, ListenerConfig, ServerConfig, WorkerConfig,
 };
 use nativelink_config::schedulers::SchedulerConfig;
-use nativelink_config::stores::{ConfigDigestHashFunction, StoreConfig};
+use nativelink_config::stores::ConfigDigestHashFunction;
 use nativelink_error::{make_err, Code, Error, ResultExt};
 use nativelink_metric::{
     MetricFieldData, MetricKind, MetricPublishKnownKindData, MetricsComponent, RootMetricsComponent,
@@ -184,32 +184,18 @@ async fn inner_main(
         let mut health_registry_lock = health_registry_builder.lock().await;
 
         for store_cfg in cfg.stores {
-            let derefed_cfg = &store_cfg;
-            let store_name = {
-                let (StoreConfig::Memory { name, .. }
-                | StoreConfig::Filesystem { name, .. }
-                | StoreConfig::S3 { name, .. }
-                | StoreConfig::Verify { name, .. }
-                | StoreConfig::CompletenessChecking { name, .. }
-                | StoreConfig::Compression { name, .. }
-                | StoreConfig::Dedup { name, .. }
-                | StoreConfig::ExistenceCache { name, .. }
-                | StoreConfig::FastSlow { name, .. }
-                | StoreConfig::Shard { name, .. }
-                | StoreConfig::Ref { name, .. }
-                | StoreConfig::SizePartitioning { name, .. }
-                | StoreConfig::Grpc { name, .. }
-                | StoreConfig::Redis { name, .. }
-                | StoreConfig::Noop { name, .. }) = derefed_cfg;
-                name
-            };
-            let health_component_name = format!("stores/{store_name}");
+            let name = store_cfg.name.clone();
+            let health_component_name = format!("stores/{name}");
             let mut health_register_store =
                 health_registry_lock.sub_builder(&health_component_name);
-            let store = store_factory(&store_cfg, &store_manager, Some(&mut health_register_store))
-                .await
-                .err_tip(|| format!("Failed to create store '{store_name}'"))?;
-            store_manager.add_store(store_name, store);
+            let store = store_factory(
+                &store_cfg.into(),
+                &store_manager,
+                Some(&mut health_register_store),
+            )
+            .await
+            .err_tip(|| format!("Failed to create store '{name}'"))?;
+            store_manager.add_store(&name, store);
         }
     }
 

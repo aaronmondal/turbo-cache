@@ -27,6 +27,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use futures::{FutureExt, StreamExt, TryFutureExt, TryStreamExt};
 use nativelink_config::cas_server::EnvironmentSource;
+use nativelink_config::stores::{MemorySpec, StoreRef};
 use nativelink_error::{make_input_err, Code, Error, ResultExt};
 use nativelink_macro::nativelink_test;
 use nativelink_proto::build::bazel::remote::execution::v2::command::EnvironmentVariable;
@@ -100,14 +101,8 @@ async fn setup_stores() -> Result<
     let ac_store = MemoryStore::new(&slow_spec);
     let cas_store = FastSlowStore::new(
         &nativelink_config::stores::FastSlowSpec {
-            fast: Box::new(nativelink_config::stores::StoreConfig::Filesystem {
-                name: "fast".to_string(),
-                spec: fast_spec,
-            }),
-            slow: Box::new(nativelink_config::stores::StoreConfig::Memory {
-                name: "slow".to_string(),
-                spec: slow_spec,
-            }),
+            fast: StoreRef::new("fast", MemorySpec::default()),
+            slow: StoreRef::new("slow", MemorySpec::default()),
         },
         Store::new(fast_store.clone()),
         Store::new(slow_store.clone()),
