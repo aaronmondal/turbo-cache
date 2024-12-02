@@ -27,13 +27,19 @@
             "content_path": "~/.cache/nativelink/data-worker-test/content_path-cas",
             "temp_path": "~/.cache/nativelink/data-worker-test/tmp_path-cas",
             "eviction_policy": {
-              "max_bytes": "10Gb"
+              "max_bytes": "20Gb"
             }
           }
         },
         "slow": {
-          "ref_store": {
-            "name": "GRPC_LOCAL_STORE"
+          "verify": {
+            "verify_hash": true,
+            "verify_size": true,
+            "backend": {
+              "ref_store": {
+                "name": "GRPC_LOCAL_STORE"
+              }
+            }
           }
         }
       }
@@ -72,6 +78,11 @@
             // the `exec_properties` of the corresponding platform at
             // `local-remote-execution/generated-cc/config/BUILD`.
             "${NATIVELINK_WORKER_PLATFORM:-undefined_platform}"
+          ]
+        },
+        "lre-rs": {
+          "values": [
+            "${NATIVELINK_WORKER_LRE_RS:-undefined}"
           ]
         }
       }

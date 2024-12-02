@@ -15,11 +15,15 @@
                 "content_path": "~/.cache/nativelink/content_path-cas",
                 "temp_path": "~/.cache/nativelink/tmp_path-cas",
                 "eviction_policy": {
-                  "max_bytes": "10Gb"
+                  "max_bytes": "20Gb"
                 }
               }
             }
           }
+        },
+        "eviction_policy": {
+          "max_count": 10000000,
+          "max_seconds": 1800
         }
       }
     },
@@ -63,7 +67,8 @@
           "cpu_model": "priority",
           "kernel_version": "priority",
           "OSFamily": "priority",
-          "container-image": "priority"
+          "container-image": "priority",
+          "lre-rs": "priority"
         }
       }
     }
