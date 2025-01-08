@@ -48,6 +48,8 @@
       // TODO(adams): max_bytes_per_stream
       "simple": {
         "supported_platform_properties": {
+          "label:action_default": "priority",
+          "label:action_large": "priority",
           "cpu_count": "priority",
           "memory_kb": "priority",
           "network_kbps": "priority",
