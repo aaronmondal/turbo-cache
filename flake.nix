@@ -330,6 +330,8 @@
 
             inherit (pkgs.nativelink-tools) local-image-test publish-ghcr native-cli;
 
+            chromium-dev = pkgs.callPackage ./tools/chromium-devshell.nix {};
+
             default = nativelink;
 
             nativelink-worker-lre-cc = createWorker pkgs.lre.lre-cc.image;

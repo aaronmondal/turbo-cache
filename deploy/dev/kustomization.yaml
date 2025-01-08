@@ -6,8 +6,9 @@ resources:
 - ../../kubernetes/resources/nativelink-core
 - ../../kubernetes/resources/gateway-routes
 - ../../kubernetes/workers/resources/worker-init
-- ../../kubernetes/workers/resources/lre-cc
-- ../../kubernetes/workers/resources/lre-rs
+- ../../kubernetes/workers/resources/siso-chromium
+# - ../../kubernetes/workers/resources/lre-cc
+# - ../../kubernetes/workers/resources/lre-rs
 
 # Modify this value to change the repository containing the deployment files.
 #
@@ -19,10 +20,10 @@ patches:
 - patch: |-
     - op: replace
       path: /spec/url
-      value: https://github.com/TraceMachina/nativelink
+      value: https://github.com/aaronmondal/nativelink
     - op: replace
       path: /spec/ref/branch
-      value: main
+      value: fix-chromium
   target:
     kind: GitRepository
     name: nativelink
