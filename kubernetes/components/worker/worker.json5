@@ -51,7 +51,7 @@
       "work_directory": "~/.cache/nativelink/work",
       "platform_properties": {
         "cpu_count": {
-          "query_cmd": "nproc"
+          "values": "24"
         },
         "memory_kb": {
           "values": ["500000"]
