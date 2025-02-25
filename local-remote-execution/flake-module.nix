@@ -49,7 +49,8 @@
   config = {
     perSystem = {pkgs, ...}: {
       packages = {
-        inherit (pkgs.lre) stable-rust nightly-rust;
+        inherit (pkgs.lre) stable-rust nightly-rust llvm;
+        inherit (pkgs.lre.stdenv) cc;
         rbe-autogen-lre-cc = pkgs.rbe-autogen pkgs.lre.lre-cc.image;
       };
     };

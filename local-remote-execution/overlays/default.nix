@@ -18,7 +18,11 @@
         inherit (final.lre) stdenv;
       };
 
-      lre-cc = final.callPackage ./lre-cc.nix {};
+      lre-cc = final.callPackage ./lre-cc.nix {
+        inherit (final.lre.lre-rs.rustConfig) nixSystemToRustTargets;
+      };
+
+      llvm = final.llvmPackages_19.llvm;
     }
     // (let
       rustConfig = import ./rust-config.nix;

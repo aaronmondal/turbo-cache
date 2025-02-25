@@ -1,0 +1,116 @@
+# Copyright 2024 The NativeLink Authors. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+load("@rules_cc//cc:defs.bzl", "cc_toolchain", "cc_toolchain_config")
+load("@rules_cc//cc/toolchains:tool.bzl", "cc_tool")
+load("@rules_cc//cc/toolchains:tool_map.bzl", "cc_tool_map")
+
+
+[
+    cc_tool_map(
+        name = "lre-cc-{}-tools".format(nix_system)
+        tools = {
+            "@rules_cc//cc/toolchains/actions:assembly_actions": "@lre-cc-clang-{}//:clang".format(nix_system),
+            "@rules_cc//cc/toolchains/actions:c_compile": "@lre-cc-clang-{}:clang".format(nix_system),
+            "@rules_cc//cc/toolchains/actions:cpp_compile_actions": "@lre-cc-clang-{}:clang++".format(nix_system),
+            # "@rules_cc//cc/toolchains/actions:link_actions": ":lld", TODO
+            "@rules_cc//cc/toolchains/actions:objcopy_embed_data": "@lre-cc-llvm-{}:llvm-objcopy".format(nix_system),
+            "@rules_cc//cc/toolchains/actions:strip": "@lre-cc-llvm-{}:llvm-strip".format(nix_system),
+        } | select({
+            "@platforms//os:macos": {
+                "@rules_cc//cc/toolchains/actions:ar_actions": "@lre-cc-llvm-{}:llvm-libtool-darwin".format(nix_system),
+            },
+            "//conditions:default": {
+                "@rules_cc//cc/toolchains/actions:ar_actions": "@lre-cc-llvm-{}:llvm-ar".format(nix_system),
+            },
+        }),
+    )
+    for nix_system in [
+        "aarch64-darwin",
+        "aarch64-linux",
+        "x86_64-darwin",
+        "x86_64-linux",
+    ]
+]
+
+[
+    cc_toolchain(
+        name = "cc-{}_impl",
+        args = [], # TODO
+        # select({
+        #     "@platforms//os:linux": [
+        #         "//toolchains/clang/args:linux_sysroot",
+        #     ],
+        #     "//conditions:default": [],
+        # }) + [
+        #     "//toolchains/args:no_absolute_paths_for_builtins",
+        #     "//toolchains/args:warnings",
+        # ],
+        enabled_features = [], # TODO
+        # enabled_features = ["@rules_cc//cc/toolchains/args:experimental_replace_legacy_action_config_features"],
+        known_features = [], # TODO
+        # known_features = ["@rules_cc//cc/toolchains/args:experimental_replace_legacy_action_config_features"],
+        tool_map = ":lre-cc-{}-tools",
+        visibility = ["//visibility:public"],
+    )
+    for nix_system in [
+        "aarch64-darwin",
+        "aarch64-linux",
+        "x86_64-darwin",
+        "x86_64-linux",
+    ]
+]
+
+[
+    toolchain(
+        name = "cc-{}-{}".format(arch, os),
+        exec_compatible_with = [
+            "@platforms//os:{}".format(os if os == "linux" else "macos"),
+            "@platforms//cpu:{}".format(arch),
+            "@bazel_tools//tools/cpp:clang",
+        ],
+        target_compatible_with =
+            # Linux toolchains can only target other linux systems.
+            # Darwin toolchains can target everything.
+            ["@platforms//os:linux"] if os == "linux" else [],
+        toolchain = ":cc-{}-{}_impl".format(arch, os),
+        toolchain_type = "@rules_cc//cc:toolchain_type",
+    )
+    for arch in [
+        "aarch64",
+        "x86_64",
+    ]
+    for os in [
+        "linux",
+        "darwin",
+    ]
+]
+
+
+toolchain(
+    name = "cc-toolchain",
+    exec_compatible_with = [
+        "@platforms//os:linux",
+        "@platforms//cpu:x86_64",
+        "@bazel_tools//tools/cpp:clang",
+    ],
+    target_compatible_with = [
+        "@platforms//os:linux",
+        "@platforms//cpu:x86_64",
+    ],
+    toolchain = "TODO",
+    toolchain_type = "@rules_cc//cc:toolchain_type",
+    visibility = ["//visibility:public"],
+)

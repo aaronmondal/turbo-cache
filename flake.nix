@@ -411,6 +411,8 @@
               pkgs.lre.stable-rust
               pkgs.lre.lre-rs.lre-rs-configs-gen
 
+              pkgs.lre.lre-cc.lre-cc-configs-gen
+
               ## Infrastructure
               pkgs.awscli2
               pkgs.google-cloud-sdk
